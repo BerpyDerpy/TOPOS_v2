@@ -1,0 +1,53 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# --- Virtual environment ---
+venv/
+.venv/
+env/
+.env/
+
+# --- Testing & coverage ---
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Type checking ---
+.mypy_cache/
+.dmypy.json
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Model cache (sentence-transformers / HuggingFace) ---
+.cache/
+~/.cache/huggingface/
+
+# --- ChromaDB persistence (if ever switched from in-memory) ---
+chroma_db/
+*.chroma
+
+# --- Experiment logs & outputs ---
+*.log
+outputs/
+results/
+
+# --- Misc ---
+*.bak
+*.tmp

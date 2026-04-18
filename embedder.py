@@ -4,7 +4,12 @@
 #   embed(text)       -> normalised 1d vector (shape = WORKSPACE_DIM,)
 #   similarity(a, b)  -> cosine similarity (float between -1 and 1)
 
+import logging
 import numpy as np
+
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+
 from sentence_transformers import SentenceTransformer
 
 import config
