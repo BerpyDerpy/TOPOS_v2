@@ -158,6 +158,38 @@ class EnsembleForwardModel:
 
         return total_loss / self.n_members
 
+    def update_bagged(self, z_t, a_t, z_t1_actual, keep_prob=0.8):
+        # bootstrap aggregating: each member randomly skips this sample
+        # with probability (1 - keep_prob). ensures ensemble diversity by
+        # giving each member a different effective training set.
+        #
+        # without bagging, all members converge to nearly identical predictions
+        # and epistemic uncertainty collapses to zero everywhere — useless.
+        #
+        # returns mean mse loss across members that were trained
+        x = self._prepare_input(z_t, a_t)
+        target = torch.from_numpy(
+            z_t1_actual.astype(np.float32)
+        ).unsqueeze(0)  # (1, 448)
+
+        total_loss = 0.0
+        n_trained = 0
+
+        for mlp, opt in zip(self._members, self._optimisers):
+            if np.random.random() > keep_prob:
+                continue  # skip this member for this sample
+            mlp.train()
+            pred = mlp(x)                             # (1, 448)
+            loss = nn.functional.mse_loss(pred, target)
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+            mlp.eval()
+            total_loss += loss.item()
+            n_trained += 1
+
+        return total_loss / max(n_trained, 1)
+
     # -------
     # save/load
     # -------

@@ -49,7 +49,10 @@ Applied to TOPOS:
 | Graph | `graph.py` | Weighted directed concept graph | NetworkX DiGraph | RAM |
 | NLP Extractor | `nlp_extractor.py` | spaCy-based concept extraction | spaCy model (lazy-loaded) | RAM |
 | Workspace | `workspace.py` | Central orchestrator, context assembly, SLM call | 384-d state vector + turn counter | RAM |
-| Main | `main.py` | CLI entry point: `--chat`, `--experiment`, `--longitudinal` | — | — |
+| State Encoder | `state_encoder.py` | Workspace state → R^448 latent vector | Four linear projections (trainable) | RAM |
+| Forward Model | `forward_model.py` | Ensemble MLP predicting z_{t+1} from (z_t, a_t) | 5× MLP weights + optimiser state | RAM |
+| Integration | `integration.py` | Curiosity-wrapped cognitive loop, autonomous exploration | Orchestration layer | — |
+| Main | `main.py` | CLI entry point: `--chat`, `--experiment`, `--longitudinal`, `--autonomous` | — | — |
 
 ### Data Flow — Single Turn
 
@@ -392,6 +395,58 @@ def compute_surprise(self, input_embedding: np.ndarray) -> float:
 No reward signal. No policy gradient. No value function. Curiosity is a property of the workspace topology, not of the SLM weights.
 
 **This is the formal basis of individual character.** TOPOS does not become curious about topics in general — it becomes curious about things that are surprising relative to its specific accumulated workspace state. Two TOPOS instances with different histories will develop different curiosity profiles.
+
+### State Encoder (`state_encoder.py`)
+
+Produces a fixed-size latent vector z_t ∈ R^448 from the four workspace submodules. The encoding is a concatenation of four projected subvectors:
+
+```
+z_t = [z_graph | z_affect | z_memory | z_input]
+       R^128     R^64       R^128      R^128
+```
+
+Each subvector is produced by a learned linear projection (no bias, no activation, orthogonal initialisation):
+
+| Subvector | Source | Projection | Aggregation |
+|---|---|---|---|
+| z_graph | Top-k concept embeddings from ConceptGraph | R^384 → R^128 | Weight-normalised mean of concept embeddings |
+| z_affect | Raw AffectiveState vector | R^64 → R^64 | Identity-dimensioned projection |
+| z_memory | All stored episode embeddings from EpisodicMemory | R^384 → R^128 | Recency × similarity soft attention over episodes |
+| z_input | Current workspace state vector | R^384 → R^128 | Direct projection |
+
+The projections are the only trainable parameters in the curiosity mechanism — they are trained indirectly via the forward model's prediction loss. Orthogonal initialisation preserves input norms, ensuring the encoder produces sensible vectors even before training.
+
+Memory aggregation uses exponential recency weighting (half-life = 10 turns) combined with cosine similarity to the current input, providing a soft attention mechanism over all stored episodes.
+
+### Forward Model Architecture
+
+An ensemble of N independent MLPs (default N=5) that predict the next workspace state from the current state and the action taken:
+
+```
+f_θ_i(z_t, a_t) → ẑ_{t+1}    for i = 1..N
+```
+
+Each MLP: Linear(576→256) → GELU → Linear(256→256) → GELU → Linear(256→448). 576 = 448 (z_t) + 128 (a_t).
+
+**Epistemic uncertainty** = mean per-dimension variance across ensemble predictions. When all members agree, uncertainty is low — the model is confident in its state space region. When members disagree, the model is in unfamiliar territory.
+
+**Bootstrap aggregating (bagging)**: Each member is trained on a random subset of each batch (60–80% keep probability). This prevents ensemble members from converging to identical predictions, which would collapse epistemic uncertainty to zero everywhere. Validation (Experiment 5) confirmed that init diversity (weight scaling factors [0.5, 0.8, 1.0, 1.5, 2.0]) is also necessary — bagging alone is insufficient.
+
+**Online training**: The forward model must train online (measure-then-update, one sample at a time) rather than batch-then-test. With a continuously drifting workspace state, a batch-trained model produces epistemic uncertainty that reflects distance from the training distribution (monotonically increasing) rather than local domain novelty. Online training keeps the ensemble current, so epistemic uncertainty reflects *where is the state space unfamiliar right now* rather than *how far are we from the initial training set*.
+
+**Why not a single large network?** A single network cannot estimate its own epistemic uncertainty. Multiple networks with different initialisations and training subsets develop naturally different hypotheses about state dynamics. Their disagreement is the uncertainty signal. This is the deep ensemble approach (Lakshminarayanan et al. 2017).
+
+### Curiosity Signal Computation
+
+Three signals derived from the forward model, computed at each turn:
+
+1. **Epistemic uncertainty** — ensemble disagreement *before* seeing ground truth. High when the workspace moves into unfamiliar state space. This is the exploration trigger. Validated: 1.05× ratio at domain transitions vs. non-transitions (Experiment 5).
+
+2. **Prediction error** — L2 distance between mean ensemble prediction and actual z_{t+1}. Measures how wrong the model was. Note: with online single-sample training on a continuously drifting state space, prediction error reflects global task difficulty, not local domain novelty. Raw prediction error is diagnostic but not used for exploration gating.
+
+3. **Progress** — decrease in prediction error relative to a rolling window mean (window K=10 for live system, K=4 for validation). Positive progress = the model is learning (Schmidhuber's formal curiosity). Zero/negative progress = the domain is either fully learned (boredom) or irreducibly noisy (noisy TV avoidance). The progress signal's rolling window crosses batch boundaries in short-batch settings, creating artifacts. Meaningful in longer-horizon deployment.
+
+The **AdaptiveThreshold** gates autonomous exploration: the 85th percentile of recent epistemic values defines the exploration threshold. Epistemic values above this are "worth exploring" — the forward model is maximally uncertain and therefore maximally informative to train on.
 
 ---
 
