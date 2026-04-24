@@ -1,0 +1,65 @@
+{
+  "domain": "systems",
+  "stages": [
+    {
+      "stage": 1,
+      "title": "The Basics of Process and Memory",
+      "description": "At the foundation lies the process model: what it means for a program to run, how the operating system allocates virtual address space, and how the CPU cycles between user and kernel mode. Virtual memory is introduced as the abstraction that lets every process believe it owns the machine. The live questions here are definitional: what guarantees does the OS actually make about process isolation, and where does that isolation break down? The tension is between the apparent simplicity of the abstraction and the hardware complexity it conceals.",
+      "key_concepts": ["process", "virtual memory", "address space", "kernel mode", "user mode", "page table", "context switch", "memory allocation", "heap", "stack"]
+    },
+    {
+      "stage": 2,
+      "title": "CPU Scheduling and Preemption",
+      "description": "Scheduling determines which runnable process gets the CPU and for how long, with policies ranging from round-robin to completely fair scheduling (CFS). Preemption introduces the idea that the scheduler can interrupt a running process mid-instruction, which forces the question of what state must be saved and restored. The tension between throughput-optimised schedulers and latency-sensitive real-time requirements is live here. Concepts like priority inversion—where a low-priority process inadvertently blocks a high-priority one—reveal that the abstraction is not composable without care.",
+      "key_concepts": ["scheduler", "preemption", "CFS", "time slice", "runqueue", "priority inversion", "real-time scheduling", "FIFO", "throughput", "latency"]
+    },
+    {
+      "stage": 3,
+      "title": "Caching, Locality, and the Memory Hierarchy",
+      "description": "Modern CPUs operate orders of magnitude faster than DRAM, and the cache hierarchy—L1, L2, L3—exists to bridge that gap by exploiting spatial and temporal locality. Cache lines are the unit of transfer: fetching one byte fetches 64. False sharing occurs when two threads write to distinct variables that happen to share a cache line, producing contention without logical data sharing. The intellectual tension is that locality is not a property of algorithms alone but of how data is laid out in physical memory relative to how threads access it—a coupling that most high-level abstractions hide entirely.",
+      "key_concepts": ["cache line", "L1 L2 L3 cache", "spatial locality", "temporal locality", "false sharing", "DRAM latency", "cache hit", "cache miss", "prefetcher", "data layout"]
+    },
+    {
+      "stage": 4,
+      "title": "Concurrency Primitives and Their Costs",
+      "description": "Mutexes, semaphores, and condition variables are the classical tools for coordinating concurrent threads, but each carries hidden costs: a mutex acquisition involves a syscall in the contended case, a cache line ping-pong in the uncontended case, and potential priority inversion under all conditions. Spinlocks avoid the syscall but burn CPU cycles, making them correct only when critical sections are extremely short. The live question is when blocking is better than spinning, and this depends on properties—contention rate, section length, core count—that are often unknowable at design time. The tension is between correctness guarantees, which blocking primitives provide cleanly, and performance, which they can catastrophically harm.",
+      "key_concepts": ["mutex", "semaphore", "condition variable", "spinlock", "contention", "syscall overhead", "blocking", "critical section", "futex", "thread coordination"]
+    },
+    {
+      "stage": 5,
+      "title": "Lock-Free Data Structures and the ABA Problem",
+      "description": "Lock-free structures use atomic compare-and-swap (CAS) operations to achieve thread safety without blocking, guaranteeing system-wide progress even if individual threads stall. The ABA problem is the central hazard: a thread reads value A, another thread changes A→B→A, and the first thread's CAS succeeds despite the logical state having changed. Solutions include tagged pointers, hazard pointers, and epoch-based reclamation, each with different tradeoffs in complexity and overhead. The unresolved tension is that lock-free structures are provably correct under formal memory models but notoriously difficult to implement correctly on real hardware where compilers and CPUs reorder operations freely.",
+      "key_concepts": ["lock-free", "compare-and-swap", "CAS", "ABA problem", "tagged pointer", "hazard pointer", "epoch-based reclamation", "atomic operation", "wait-free", "progress guarantee"]
+    },
+    {
+      "stage": 6,
+      "title": "Memory Ordering and the C++ Memory Model",
+      "description": "Hardware architectures—x86, ARM, POWER—allow CPUs to reorder memory operations for performance, meaning a write visible to one core may not be visible to another in the order it occurred. The C++ memory model (C++11 onward) formalises this with `std::atomic` and six memory orderings, from `relaxed` (no ordering guarantees) through `acquire`/`release` (one-directional barriers) to `seq_cst` (total order). The live question is that seq_cst is the only ordering most programmers can reason about safely, yet it is the most expensive. The intellectual tension is between the formal correctness of the memory model specification and the practical difficulty of applying it: a single misplaced `relaxed` is sufficient for a data race that is silent under x86 and catastrophic under ARM.",
+      "key_concepts": ["memory ordering", "seq_cst", "acquire release", "relaxed ordering", "memory barrier", "happens-before", "data race", "std::atomic", "store buffer", "weak memory model"]
+    },
+    {
+      "stage": 7,
+      "title": "NUMA, TLB Shootdowns, and Topology-Aware Programming",
+      "description": "On multi-socket systems, Non-Uniform Memory Access (NUMA) means that a core on socket 0 accessing memory physically attached to socket 1 pays a latency penalty of 2–4× compared to local access. The operating system's memory allocator is NUMA-unaware by default; achieving locality requires explicit binding with `numactl` or `mbind`. TLB shootdowns occur when one core modifies a page table entry and must interrupt all other cores to invalidate their local TLB copies, a mechanism that scales poorly as core counts grow. The unresolved tension is that NUMA topology is exposed to the OS but almost never to application programmers, yet ignoring it produces performance cliffs that appear only at scale.",
+      "key_concepts": ["NUMA", "TLB shootdown", "memory locality", "socket topology", "numactl", "page table invalidation", "remote memory access", "NUMA-aware allocator", "inter-socket latency", "memory binding"]
+    },
+    {
+      "stage": 8,
+      "title": "Speculative Execution, Branch Prediction, and Hardware Hazards",
+      "description": "Modern CPUs speculatively execute instructions beyond unresolved branches, discarding results if the prediction is wrong—branch misprediction costs 10–20 cycles. Spectre and Meltdown revealed that speculative execution leaves microarchitectural side-effects (cache state) observable even when its architectural effects are rolled back, breaking the isolation assumed by the entire virtual memory model. Mitigations like retpoline and IBRS carry measurable throughput costs of 5–30% on workloads with indirect branches. The live tension is that the performance of modern systems is inseparable from speculative execution, and the security of modern systems requires constraining it—these are formally incompatible goals at the microarchitectural level.",
+      "key_concepts": ["branch prediction", "speculative execution", "Spectre", "Meltdown", "retpoline", "IBRS", "side channel", "pipeline flush", "indirect branch", "microarchitectural state"]
+    },
+    {
+      "stage": 9,
+      "title": "Linearisability, Consistency Models, and Distributed Systems",
+      "description": "Linearisability is the gold standard for concurrent object correctness: every operation appears to take effect instantaneously at some point between its invocation and completion, consistent with a sequential history. The CAP theorem formalises a fundamental tradeoff: under network partition, a distributed system cannot simultaneously be consistent and available. Weaker consistency models—eventual consistency, causal consistency, session guarantees—each relax linearisability in different ways to recover availability or performance, but none can be composed with the same algebraic simplicity as sequential code. The unresolved tension is that most distributed systems documentation describes which model is used, but not the class of application-level bugs that become possible when programmers assume a stronger model than the system provides.",
+      "key_concepts": ["linearisability", "CAP theorem", "eventual consistency", "causal consistency", "sequential consistency", "partition tolerance", "consistency model", "availability", "distributed transaction", "conflict-free replicated data type"]
+    },
+    {
+      "stage": 10,
+      "title": "Kernel Bypass, eBPF, and the Dissolving Kernel Boundary",
+      "description": "Kernel bypass networking (DPDK, RDMA) relocates packet processing entirely into userspace, eliminating syscall overhead and achieving sub-microsecond latencies that the kernel network stack cannot approach—but at the cost of abandoning the OS abstractions that provide isolation, fairness, and security. eBPF inverts this: rather than moving work out of the kernel, it allows verified programs to run inside the kernel in response to events, turning the kernel into a programmable substrate without requiring a module or a reboot. Memory-mapped I/O tunnels hardware register space directly into process address space, collapsing the device driver abstraction. The unresolved question at this stage is what the kernel boundary is *for*, now that the mechanisms for bypassing, extending, and dissolving it are mature: the remaining constraints are not technical but conceptual, about what invariants the OS is still responsible for maintaining when half the interesting work happens outside its control.",
+      "key_concepts": ["kernel bypass", "DPDK", "RDMA", "eBPF", "memory-mapped I/O", "userspace networking", "kernel extension", "zero-copy", "io_uring", "kernel boundary"]
+    }
+  ]
+}

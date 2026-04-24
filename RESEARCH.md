@@ -1,4 +1,4 @@
-# KITE: Global Workspace Architecture — Research Findings
+# KITE: Global Workspace Architecture  -  Research Findings
 
 ## Project Background
 
@@ -12,12 +12,12 @@ Three architectural simplifications were made during design review:
 
 ### Core Research Problem
 
-Build a conversational agent that learns like an individual, transforms its personality through accumulated experience, and exhibits curiosity as an intrinsic mechanism — not as a hardcoded persona or prompt injection.
+Build a conversational agent that learns like an individual, transforms its personality through accumulated experience, and exhibits curiosity as an intrinsic mechanism  -  not as a hardcoded persona or prompt injection.
 
 Three sub-problems:
-- **Continuous learning without catastrophic forgetting** — Standard fine-tuning overwrites previous knowledge. Standard RL is slow, unstable, and subject to mode collapse.
-- **Personality without programming** — A persona defined in a system prompt is not a personality. A real personality is an emergent property of accumulated experience.
-- **Curiosity without prompt** — A system that only responds to prompts is not curious. Curiosity requires an internal mechanism that initiates exploration independently.
+- **Continuous learning without catastrophic forgetting**  -  Standard fine-tuning overwrites previous knowledge. Standard RL is slow, unstable, and subject to mode collapse.
+- **Personality without programming**  -  A persona defined in a system prompt is not a personality. A real personality is an emergent property of accumulated experience.
+- **Curiosity without prompt**  -  A system that only responds to prompts is not curious. Curiosity requires an internal mechanism that initiates exploration independently.
 
 ---
 
@@ -25,9 +25,9 @@ Three sub-problems:
 
 ### Why Standard RL Was Rejected
 
-1. **Catastrophic forgetting** — Gradient updates during RL overwrite previously learned associations. This problem intensifies in models below 10B parameters.
-2. **Instability** — Policy gradient methods require careful reward shaping. For open-ended conversational learning, defining a reward signal is itself an unsolved problem.
-3. **Mismatch with the goal** — RL optimises for reward maximisation. Curiosity is information gain for its own sake. These are formally different objectives.
+1. **Catastrophic forgetting**  -  Gradient updates during RL overwrite previously learned associations. This problem intensifies in models below 10B parameters.
+2. **Instability**  -  Policy gradient methods require careful reward shaping. For open-ended conversational learning, defining a reward signal is itself an unsolved problem.
+3. **Mismatch with the goal**  -  RL optimises for reward maximisation. Curiosity is information gain for its own sake. These are formally different objectives.
 
 ### Candidates Considered and Rejected
 
@@ -42,7 +42,7 @@ Three sub-problems:
 - Role in final architecture: The frozen base SLM is the slow weight system. The workspace modules collectively serve the fast-weight function. The distinction is preserved conceptually.
 
 **Memory-Augmented Neural Networks (MANNs)**
-- Appeal: External differentiable memory (Neural Turing Machine / DNC lineage). Learning is encoded entirely in memory state — no weights change. Arbitrary temporal span.
+- Appeal: External differentiable memory (Neural Turing Machine / DNC lineage). Learning is encoded entirely in memory state  -  no weights change. Arbitrary temporal span.
 - Assessment: Strong fit for cross-session persistence. Retrieval fidelity degrades at scale without good indexing, solvable with recency+relevance weighting.
 - Role in final architecture: The episodic memory module is MANN-inspired, implemented as a vector store with embedding-based retrieval.
 
@@ -55,11 +55,11 @@ The core GWT insight: coherent intelligent behaviour arises not from a single la
 Applied to KITE:
 - The global workspace is the latent state: a persistent, dynamically-updated representation of what KITE "knows right now."
 - Specialised modules (episodic memory, conceptual graph, affective state) each write to this workspace.
-- The SLM reads from the workspace and generates language. **It is not the mind — it is the mouth.**
+- The SLM reads from the workspace and generates language. **It is not the mind  -  it is the mouth.**
 
 This separation is the key architectural insight: **personality and curiosity live in the latent space, not in the weights of the SLM.**
 
-GWT also provides a formal connection to curiosity: bottom-up attention is triggered by inputs that do not fit the current workspace state — a surprise signal. This is formally equivalent to information gain / epistemic uncertainty, the basis of intrinsic motivation in RL research (Pathak et al. ICM, Burda et al. RND). GWT provides a non-RL mechanism for the same signal.
+GWT also provides a formal connection to curiosity: bottom-up attention is triggered by inputs that do not fit the current workspace state  -  a surprise signal. This is formally equivalent to information gain / epistemic uncertainty, the basis of intrinsic motivation in RL research (Pathak et al. ICM, Burda et al. RND). GWT provides a non-RL mechanism for the same signal.
 
 ---
 
@@ -68,9 +68,9 @@ GWT also provides a formal connection to curiosity: bottom-up attention is trigg
 ### Base SLM
 
 - **Selected model:** Qwen2.5-7B (base, not instruct)
-- **Why base not instruct:** Instruct variants carry implicit RLHF-baked personas, refusal behaviours, and response styles that cannot be fully removed. The base model is a blank slate — all personality shaping comes from the workspace.
+- **Why base not instruct:** Instruct variants carry implicit RLHF-baked personas, refusal behaviours, and response styles that cannot be fully removed. The base model is a blank slate  -  all personality shaping comes from the workspace.
 - **Quantisation:** 4-bit (AWQ or GPTQ), reducing VRAM from ~14GB (fp16) to ~4.5GB, leaving ~7.5GB for workspace and projection layer on a 12GB VRAM budget.
-- **Inference:** Via Ollama, using the ollama-python client. Fully frozen during deployment — no gradients flow through it.
+- **Inference:** Via Ollama, using the ollama-python client. Fully frozen during deployment  -  no gradients flow through it.
 
 Alternative base models considered:
 
@@ -85,17 +85,17 @@ Alternative base models considered:
 
 Stores conversation turns as embedding vectors with metadata (turn index, timestamp). Retrieval uses cosine similarity with recency weighting. Implemented as a ChromaDB in-memory collection for the prototype; upgrades to persistent storage for deployment.
 
-Function: Provides KITE with access to specific past interactions. VRAM cost: zero — lives entirely in RAM.
+Function: Provides KITE with access to specific past interactions. VRAM cost: zero  -  lives entirely in RAM.
 
 ### Conceptual Graph Module
 
 A weighted directed graph (NetworkX DiGraph) where nodes are meaningful concepts extracted from input text and edge weights represent co-occurrence strength, scaled by the surprise signal. Nodes accumulate weight over turns; low-weight nodes are pruned when the graph exceeds a size threshold.
 
-**Function:** Encodes the topology of what KITE thinks about. Personality is not stored as a description — it emerges as the structure of this graph. A KITE that has had many conversations about systems and music will have high-centrality nodes for hardware, abstraction, rhythm, and silence, with strong edges between them. This is the mechanism of genuine character formation.
+**Function:** Encodes the topology of what KITE thinks about. Personality is not stored as a description  -  it emerges as the structure of this graph. A KITE that has had many conversations about systems and music will have high-centrality nodes for hardware, abstraction, rhythm, and silence, with strong edges between them. This is the mechanism of genuine character formation.
 
 **Concept extraction:** Tokenisation + stopword filtering. Domain-specific stopwords ("about", "between", "something", "really", "under") must be explicitly removed. Generic length filters (>4 chars) are insufficient and produce noise-dominated graphs.
 
-VRAM cost: zero — lives in RAM.
+VRAM cost: zero  -  lives in RAM.
 
 ### Affective State Module
 
@@ -104,9 +104,9 @@ A 64-dimensional continuous vector, initialised to zero. Updated via exponential
 - `arousal = ‖a‖₂ / √d ∈ [0, 1]`
 - `valence = (ā₁:d/2 − ād/2:d) / max|a| ∈ [−1, 1]`
 
-**Sentiment input:** Computed from a domain-calibrated lexicon (~70 entries, ±8× normalisation factor). TextBlob was evaluated and rejected — it returns near-zero polarity on technical and philosophical text, rendering the module non-functional.
+**Sentiment input:** Computed from a domain-calibrated lexicon (~70 entries, ±8× normalisation factor). TextBlob was evaluated and rejected  -  it returns near-zero polarity on technical and philosophical text, rendering the module non-functional.
 
-**Function:** Gates memory consolidation (only high-arousal moments write to long-term memory) and contributes to workspace context framing. High arousal + negative valence produces a restless, searching character register. High arousal + positive valence produces engaged, generative character. This is not simulated emotion — it is an internal signal about workspace dynamics.
+**Function:** Gates memory consolidation (only high-arousal moments write to long-term memory) and contributes to workspace context framing. High arousal + negative valence produces a restless, searching character register. High arousal + positive valence produces engaged, generative character. This is not simulated emotion  -  it is an internal signal about workspace dynamics.
 
 ### Surprise Signal
 
@@ -116,7 +116,7 @@ where eₜ is the embedding of the current input and wₜ₋₁ is the current w
 
 High surprise triggers deeper processing: the concept graph receives higher weight increments, the affective state is updated more strongly, and the episodic memory write is marked as salient.
 
-**This is the curiosity mechanism.** KITE does not become curious about topics in general — it becomes curious about things that are surprising relative to its specific accumulated workspace state. Two KITE instances with different histories will develop different curiosity profiles. This is the formal basis of individual character.
+**This is the curiosity mechanism.** KITE does not become curious about topics in general  -  it becomes curious about things that are surprising relative to its specific accumulated workspace state. Two KITE instances with different histories will develop different curiosity profiles. This is the formal basis of individual character.
 
 ### Workspace State Vector
 
@@ -132,22 +132,22 @@ A small linear projection (R³⁸⁴ → R^(dmodel × k), where k is the number 
 
 For the prototype, workspace state is translated to a first-person natural language context string instead.
 
-**Critical design note:** The system prompt must be directive, not suggestive. "Let it subtly shape your response" allows the base model's trained conversational habits to override workspace conditioning. The correct framing is: "Respond from inside that state — your specific associations, not general ones. Do not deflect. Speak from it."
+**Critical design note:** The system prompt must be directive, not suggestive. "Let it subtly shape your response" allows the base model's trained conversational habits to override workspace conditioning. The correct framing is: "Respond from inside that state  -  your specific associations, not general ones. Do not deflect. Speak from it."
 
 ---
 
 ## Curiosity
 
 ### What Curiosity Is Not
-- Not continuous token generation. A loop that generates tokens indefinitely is still pattern completion — uninterrupted next-token prediction, not intrinsically motivated exploration.
+- Not continuous token generation. A loop that generates tokens indefinitely is still pattern completion  -  uninterrupted next-token prediction, not intrinsically motivated exploration.
 - Not novelty alone. Pure novelty-seeking agents exhibit "noisy TV" failure: fixation on irreducible noise sources because these are maximally novel. Novelty is necessary but not sufficient.
 - Not a hardcoded persona. A system prompt that says "you are curious about X" is not curiosity. It is a behavioural constraint that will degrade under distribution shift.
 
 ### What Curiosity Is
 
-Human curiosity operates via prediction error. The dopamine system fires on unexpected novelty and motivates behaviour to resolve uncertainty. Formally: information gain — the agent seeks states that maximise reduction in epistemic uncertainty.
+Human curiosity operates via prediction error. The dopamine system fires on unexpected novelty and motivates behaviour to resolve uncertainty. Formally: information gain  -  the agent seeks states that maximise reduction in epistemic uncertainty.
 
-Critical constraint from recent research: information gain alone fails in the presence of irreducible uncertainty. The most robust curiosity signal combines information gain with empowerment — prioritising states where the agent can actually influence outcomes. An agent that is surprised by something it cannot act on should not recursively fixate on it.
+Critical constraint from recent research: information gain alone fails in the presence of irreducible uncertainty. The most robust curiosity signal combines information gain with empowerment  -  prioritising states where the agent can actually influence outcomes. An agent that is surprised by something it cannot act on should not recursively fixate on it.
 
 For KITE: curiosity should fire when an input is surprising **and** when the resulting concept graph expansion is actionable (i.e., when the new node connects to existing high-weight regions of the graph).
 
@@ -158,7 +158,7 @@ The GWT architecture implements curiosity without RL through the surprise signal
 2. High surprise → deep processing: large graph weight increment, strong affective update, salient episodic write.
 3. Low surprise → shallow processing: small increments, existing nodes reinforced.
 4. The workspace state drifts toward regions of high surprise over time.
-5. KITE's "interests" — the high-centrality nodes in the concept graph — are the topics that consistently produced high surprise given its specific history.
+5. KITE's "interests"  -  the high-centrality nodes in the concept graph  -  are the topics that consistently produced high surprise given its specific history.
 
 No reward signal. No policy gradient. No value function. Curiosity is a property of the workspace topology, not of the SLM weights.
 
@@ -204,9 +204,9 @@ One instance primed with 50 turns across two interleaved themes in batches of 5:
 - Systems (25 turns): Memory leaks, CPU scheduling, cache coherence, lock-free structures, virtual memory, concurrency bugs, profiling
 
 Three evaluation questions asked after priming:
-1. "What do you think about silence?" — sits in both domains, tests which dominates
-2. "Is there a rhythm to how computers think?" — deliberate collision, tests synthesis
-3. "What do you find yourself returning to, when nothing is demanding your attention?" — abstract, tests whether personality has formed
+1. "What do you think about silence?"  -  sits in both domains, tests which dominates
+2. "Is there a rhythm to how computers think?"  -  deliberate collision, tests synthesis
+3. "What do you find yourself returning to, when nothing is demanding your attention?"  -  abstract, tests whether personality has formed
 
 Run three times with incremental fixes applied between runs.
 
@@ -216,7 +216,7 @@ Run three times with incremental fixes applied between runs.
 
 ### Run 1: Baseline
 
-**A/B Test:** Outcome 1 achieved. KITE-B unprompted referenced kernel scheduling in response to a neutral question about learning — arising entirely from workspace memory surface, not from the question itself. KITE-A responded philosophically; KITE-B responded technically and task-oriented.
+**A/B Test:** Outcome 1 achieved. KITE-B unprompted referenced kernel scheduling in response to a neutral question about learning  -  arising entirely from workspace memory surface, not from the question itself. KITE-A responded philosophically; KITE-B responded technically and task-oriented.
 
 **Longitudinal:** Collapsed entirely to music. Systems theme was invisible in responses despite 25 turns of priming.
 
@@ -232,22 +232,22 @@ A domain stopword list (~25 words) was added to concept extraction. Top-10 conce
 | every, really, memory | mental, model, chord |
 | Signal concepts: 2/10 | Signal concepts: 7/10 |
 
-**Result:** Q2 ("Is there a rhythm to how computers think?") for the first time referenced CPUs, clock cycles, hardware timing, and memory accesses explicitly — then connected them to silence from the music domain. Cross-domain synthesis emerged. Q3 still music-dominant. Valence permanently neutral (TextBlob failure identified).
+**Result:** Q2 ("Is there a rhythm to how computers think?") for the first time referenced CPUs, clock cycles, hardware timing, and memory accesses explicitly  -  then connected them to silence from the music domain. Cross-domain synthesis emerged. Q3 still music-dominant. Valence permanently neutral (TextBlob failure identified).
 
 ### Run 3: Full Signal Quality Fix
 
 Three fixes applied simultaneously:
 1. Stopword list expanded (additional 25 domain-specific function words)
 2. Sentiment replaced: TextBlob replaced with a 70-entry domain lexicon with ±8× normalisation. Test showed 6/7 sentences resolving to clearly positive or negative polarity (vs. 0/7 with TextBlob).
-3. Context string reframed: "Let it subtly shape your response" replaced with first-person subjective framing: "You find yourself drawn to: [concepts]. These are not topics — they are how you think."
+3. Context string reframed: "Let it subtly shape your response" replaced with first-person subjective framing: "You find yourself drawn to: [concepts]. These are not topics  -  they are how you think."
 
-**Q1 (Silence):** Second paragraph explicitly bridged electronic music, data transmission gaps, and system performance — then unified them. Both domains present, response moves between them.
+**Q1 (Silence):** Second paragraph explicitly bridged electronic music, data transmission gaps, and system performance  -  then unified them. Both domains present, response moves between them.
 
 **Q2 (Rhythm/Computers):** CPU cycles, clock precision, waiting states, and synchronisation referenced explicitly, then connected to musical silence. Genuine synthesis, not metaphor substitution.
 
 **Q3 (Idle returns):** Response referenced "familiar architectures" (not "familiar places"). The word *architecture* is load-bearing and traces directly to the concept graph having both "abstraction" and "model" at high weight. First response across all runs that did not deflect back to the user. Personality present.
 
-**Affective coherence:** Valence resolved to negative after 50 turns. The priming corpus contained frustrated, searching, and unresolved inputs ("philosophy frustrates me", "a segfault is the system refusing to pretend", "I keep thinking about…"). The lexicon correctly weighted this. The context string then framed KITE's character as "a restless, searching quality" — consistent with high arousal and negative valence. All three modules were coherent for the first time.
+**Affective coherence:** Valence resolved to negative after 50 turns. The priming corpus contained frustrated, searching, and unresolved inputs ("philosophy frustrates me", "a segfault is the system refusing to pretend", "I keep thinking about…"). The lexicon correctly weighted this. The context string then framed KITE's character as "a restless, searching quality"  -  consistent with high arousal and negative valence. All three modules were coherent for the first time.
 
 ### Summary
 
@@ -292,7 +292,7 @@ The GWT architecture's primary advantage over MANN-only designs is the addition 
 
 - **Perturbation resistance (100+ turns, third domain introduced midway):** Does accumulated identity shift gracefully or collapse?
 - **Contradiction handling:** Feed information that conflicts with established graph nodes. Does KITE update, resist, or fragment?
-- **Dormant-active cycles:** Allow the workspace to "settle" between sessions — low-weight node decay, edge pruning, affective vector decay. Does this produce more coherent long-term character?
+- **Dormant-active cycles:** Allow the workspace to "settle" between sessions  -  low-weight node decay, edge pruning, affective vector decay. Does this produce more coherent long-term character?
 - **Soft prompt projection training:** Train the projection layer on a small supervised dataset. Measure improvement in workspace-to-generation fidelity.
 
 ---
@@ -310,15 +310,15 @@ The GWT architecture's primary advantage over MANN-only designs is the addition 
 
 ### Applications Identified
 
-- **Personal AI Companion** — personality accumulation from interaction history enables a companion that becomes genuinely individualised over time. Unlike persona-prompted systems, the character cannot be reset by a new system prompt — it is encoded in workspace state and graph topology.
-- **Longitudinal Educational Agent** — tracks not just what a student has learned but what they find interesting, frustrating, or surprising. The concept graph maps knowledge topology; the surprise signal identifies the productive edge of understanding (analogous to Vygotsky's Zone of Proximal Development).
-- **Research Assistant with Persistent Expertise** — concept graph accumulates over years of interaction in a specialised field, developing genuine expertise structure reflecting the domain's actual conceptual topology as experienced by a specific researcher.
-- **Dormant-Active Architecture** — workspace continues to evolve when no conversation is active. Low-weight nodes decay. Contradiction detection triggers consolidation. Affective state settles. Architecturally achievable with a lightweight background process updating the workspace on a slow tick.
-- **Multi-Agent Workspace Sharing** — the workspace is a serialisable data structure. Multiple agent instances could read from a shared workspace, enabling ensemble reasoning where different SLMs contribute to a unified global state.
+- **Personal AI Companion**  -  personality accumulation from interaction history enables a companion that becomes genuinely individualised over time. Unlike persona-prompted systems, the character cannot be reset by a new system prompt  -  it is encoded in workspace state and graph topology.
+- **Longitudinal Educational Agent**  -  tracks not just what a student has learned but what they find interesting, frustrating, or surprising. The concept graph maps knowledge topology; the surprise signal identifies the productive edge of understanding (analogous to Vygotsky's Zone of Proximal Development).
+- **Research Assistant with Persistent Expertise**  -  concept graph accumulates over years of interaction in a specialised field, developing genuine expertise structure reflecting the domain's actual conceptual topology as experienced by a specific researcher.
+- **Dormant-Active Architecture**  -  workspace continues to evolve when no conversation is active. Low-weight nodes decay. Contradiction detection triggers consolidation. Affective state settles. Architecturally achievable with a lightweight background process updating the workspace on a slow tick.
+- **Multi-Agent Workspace Sharing**  -  the workspace is a serialisable data structure. Multiple agent instances could read from a shared workspace, enabling ensemble reasoning where different SLMs contribute to a unified global state.
 
 ### Integration with Original KITE Goals
 
-The architecture is fully compatible with KITE's original design as an MCP skill executor. The SLM generates language and tool calls; the workspace accumulates knowledge about which tools were used, which tasks were difficult, which approaches failed. Over time, KITE's concept graph develops a task-specific topology that improves routing decisions — not through RL reward shaping but through accumulated experience structure.
+The architecture is fully compatible with KITE's original design as an MCP skill executor. The SLM generates language and tool calls; the workspace accumulates knowledge about which tools were used, which tasks were difficult, which approaches failed. Over time, KITE's concept graph develops a task-specific topology that improves routing decisions  -  not through RL reward shaping but through accumulated experience structure.
 
 ---
 
@@ -367,7 +367,7 @@ def compute_surprise(self, input_embedding: np.ndarray) -> float:
 ```
 
 ```python
-# Context string template (Run 3 — final version)
+# Context string template (Run 3  -  final version)
 def context_string(self) -> str:
     arousal_desc = self.affect.arousal_description()
     concepts = self.graph.top_concepts(5)
@@ -381,7 +381,7 @@ def context_string(self) -> str:
         f"[Workspace state]\n{felt}\n"
         f"Surprise this turn: {self.last_surprise:.2f}\n"
         f"You find yourself drawn to: {', '.join(concepts)}. "
-        f"These are not topics — they are how you think.\n"
+        f"These are not topics  -  they are how you think.\n"
         f"You keep returning to: {'; '.join(m['text'] for m in memories)}"
     )
 ```

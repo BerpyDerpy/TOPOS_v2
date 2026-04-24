@@ -1,4 +1,4 @@
-# ROADMAP.md — TOPOS Planning Surface
+# ROADMAP.md  -  TOPOS Planning Surface
 
 Living document. Rewrite freely. This is where priorities live, not an archive.
 
@@ -29,7 +29,7 @@ Key tasks:
 
 **Depends on:** P-Tuning v2 results. No point testing identity persistence if the SLM still ignores workspace state at response boundaries.
 
-**Blocked by:** The `#TODO` in `main.py:9` — need a `--mega-longitudinal` mode or a generalised turn-count flag.
+**Blocked by:** The `#TODO` in `main.py:9`  -  need a `--mega-longitudinal` mode or a generalised turn-count flag.
 
 ### 2. Contradiction Handling
 
@@ -41,7 +41,7 @@ Feed information that directly conflicts with high-weight concept graph nodes. E
 
 Between sessions: decay low-weight nodes, prune weak edges, let affective vector settle toward zero baseline. Simulate "sleeping on it." Does the workspace consolidate or just lose signal?
 
-**Requires:** Serialisation of workspace state (graph, affect, memory). Currently in-memory only — this needs persistence first.
+**Requires:** Serialisation of workspace state (graph, affect, memory). Currently in-memory only  -  this needs persistence first.
 
 ---
 

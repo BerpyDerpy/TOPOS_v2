@@ -27,7 +27,7 @@ VALENCE_NEG       = -0.2      # negative vibes threshold
 SENTIMENT_SCALE   = 8.0       # magic number for lexicon normalisation
 
 # graph
-MAX_GRAPH_NODES   = 100       # chop the weakest node if we go over this
+MAX_GRAPH_NODES   = 200      # chop the weakest node if we go over this
 NER_BOOST_THRESHOLD = 1.5     # ner concepts above this get extra graph juice
 
 # nlp extractor weights

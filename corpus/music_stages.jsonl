@@ -1,0 +1,176 @@
+{
+  "domain": "music",
+  "stages": [
+    {
+      "stage": 1,
+      "title": "Foundations of Tone and Tuning",
+      "description": "The starting point is the raw material of musical thought: pitched sound, its physical properties, and the earliest human attempts to organise it into intervals. Octave equivalence, the harmonic series, and the consonance-dissonance gradient are in play. The central question is why certain intervallic ratios feel stable and others do not, and what it means for a musical culture to canonise some of those ratios as its tonal vocabulary. The tension here is between the acoustic facts of vibrating bodies and the cultural decision about which facts to treat as musically meaningful.",
+      "key_concepts": [
+        "harmonic series",
+        "octave equivalence",
+        "interval",
+        "consonance",
+        "dissonance",
+        "fundamental frequency",
+        "overtone",
+        "partials",
+        "tonal vocabulary"
+      ]
+    },
+    {
+      "stage": 2,
+      "title": "Scale Construction and Modal Logic",
+      "description": "From the raw interval comes the scale: a selection of pitches that defines a sonic world for a piece or a tradition. Western modes (Dorian, Phrygian, Lydian, Mixolydian) are not merely scale variants but carry distinct gravitational fields — different degrees of tension between their notes and different implications for what resolution sounds like. Modal jazz (Miles Davis's 'Kind of Blue', early Coltrane) used this modal logic to escape the pull of functional harmony, substituting scalar atmosphere for chord-to-chord motion. The live question is what gives a mode its character: is it the interval pattern, the placement of the tritone, or something about the way it directs melodic expectation?",
+      "key_concepts": [
+        "diatonic scale",
+        "church modes",
+        "Dorian mode",
+        "Phrygian mode",
+        "Lydian mode",
+        "modal jazz",
+        "scalar improvisation",
+        "tonal gravity",
+        "melodic expectation"
+      ]
+    },
+    {
+      "stage": 3,
+      "title": "Rhythm, Pulse, and Polyrhythm",
+      "description": "Rhythm is not merely the subdivision of time but the creation of competing temporal layers that can reinforce or contradict each other. A steady pulse is a foundation, but the most generative rhythmic thinking begins where the pulse becomes implicit — felt but not stated — against which displaced accents, syncopation, and cross-rhythms operate. Polyrhythm, particularly the superimposition of three against two or five against four, creates a felt ambiguity about where the downbeat lives. African drumming traditions built entire compositional vocabularies out of interlocking patterns where no single player carries the whole rhythm. The open question is whether polyrhythm is perceived as simultaneous competing metres or as a single complex metre that subsumes both.",
+      "key_concepts": [
+        "pulse",
+        "metre",
+        "syncopation",
+        "polyrhythm",
+        "cross-rhythm",
+        "rhythmic displacement",
+        "downbeat ambiguity",
+        "interlocking patterns",
+        "hemiola",
+        "African drumming"
+      ]
+    },
+    {
+      "stage": 4,
+      "title": "Timbre as Primary Material",
+      "description": "Timbre — the quality that distinguishes a violin from an oboe playing the same pitch — was long treated as secondary to pitch and rhythm. The 20th century reversed this hierarchy. Spectral composers (Grisey, Murail) derived their entire harmonic language from the inner structure of the overtone spectrum of a single instrument, making timbre the architectural load-bearer rather than the surface. Extended techniques — col legno, multiphonics, prepared piano strings, sul ponticello — do not merely alter colour but create sounds where the boundary between pitched tone and noise becomes genuinely unstable. The contested question is whether timbre can carry syntactic weight the way pitch can, or whether it remains, at some irreducible level, a modifier rather than a primary element.",
+      "key_concepts": [
+        "timbre",
+        "spectral music",
+        "overtone spectrum",
+        "extended techniques",
+        "col legno",
+        "multiphonics",
+        "prepared piano",
+        "sul ponticello",
+        "noise-pitch boundary",
+        "sonic texture",
+        "grain"
+      ]
+    },
+    {
+      "stage": 5,
+      "title": "Tuning Systems and the Incommensurability Problem",
+      "description": "Equal temperament divides the octave into twelve equal semitones, making every key equally in tune and equally slightly out of tune. Just intonation tunes intervals from pure integer ratios — the intervals the harmonic series actually produces — but creates a tuning that cannot modulate freely without some notes drifting noticeably sharp or flat. The Pythagorean comma (the gap left when twelve perfect fifths fail to close the circle) is the mathematical statement of an irreconcilable conflict. Microtonality opens the question further: if the twelve-note chromatic scale is a cultural convention, what would a music built on 19, 24, 31, or 72 equal divisions of the octave sound like, and what harmonic logic would govern it? Harry Partch built custom instruments for 43-tone just intonation; the Arabic maqam system uses quarter-tones as structural elements. The unresolved tension is between tuning purity and compositional freedom.",
+      "key_concepts": [
+        "equal temperament",
+        "just intonation",
+        "Pythagorean comma",
+        "microtonality",
+        "quarter-tone",
+        "maqam",
+        "Harry Partch",
+        "meantone tuning",
+        "wolf interval",
+        "octave division",
+        "harmonic purity"
+      ]
+    },
+    {
+      "stage": 6,
+      "title": "Silence, Negative Space, and the Role of Absence",
+      "description": "John Cage's 4'33\" does not argue that silence is music but rather that the boundary between intended sound and ambient sound is a cultural construction, not an acoustic fact. Negative space in music is not merely the absence of sound but the active shaping of what the listener attends to when sound stops. Ma — the Japanese concept of the necessary gap — treats silence as a structural element with the same compositional weight as the notes that bracket it. In jazz, the space between phrases is where rhythmic tension accumulates and releases; a player who cannot use silence cannot phrase. The live question is whether silence is a neutral ground onto which listening projects meaning, or whether it has intrinsic musical character shaped by what preceded and follows it.",
+      "key_concepts": [
+        "silence",
+        "negative space",
+        "John Cage",
+        "4'33\"",
+        "ambient sound",
+        "ma",
+        "negative capability",
+        "phrase ending",
+        "rest as composition",
+        "listening as act"
+      ]
+    },
+    {
+      "stage": 7,
+      "title": "Form, Constraint, and the Generative Role of Limitation",
+      "description": "A twelve-bar blues is a constraint: a fixed harmonic cycle that repeats without deviation. Within that constraint, generations of musicians have found inexhaustible variety — the form does not limit expression, it creates a shared framework against which deviation becomes legible as expression. Sonata form, the rondo, the da capo aria, the raga performance structure — each is a formal constraint that produces meaning precisely because listeners internalise the expectation. The question becomes: does constraint liberate by providing resistance, or does it inevitably narrow the space of possibilities? Serialism took this to an extreme, deriving every element from a predetermined tone row, with some composers finding it generative and others finding it a cage. The tension between form as scaffold and form as straitjacket is unresolved.",
+      "key_concepts": [
+        "twelve-bar blues",
+        "sonata form",
+        "rondo",
+        "raga structure",
+        "serialism",
+        "tone row",
+        "formal constraint",
+        "expectation and deviation",
+        "da capo",
+        "generative limitation"
+      ]
+    },
+    {
+      "stage": 8,
+      "title": "Improvisation, Spontaneity, and the Prepared Mind",
+      "description": "Improvisation is not the absence of composition but a different distribution of compositional decisions across time — some made years before the performance through practice, some in the moment. Charlie Parker could improvise complex bebop lines because he had internalized enough vocabulary that retrieval was faster than real-time invention. Late Coltrane ('A Love Supreme', the Interstellar Space duets) pushed toward a point where the boundary between vocabulary and discovery became unclear — whether certain passages were pre-formed patterns or genuinely spontaneous remains analytically contested. Free improvisation (AMM, Derek Bailey) tried to abandon vocabulary entirely, but critics argued that the body's motor habits constitute an involuntary vocabulary that cannot be erased. The unresolved question: is there such a thing as genuine spontaneity in performance, or is all improvisation the rapid retrieval of internalised structure?",
+      "key_concepts": [
+        "improvisation",
+        "jazz vocabulary",
+        "bebop",
+        "Charlie Parker",
+        "late Coltrane",
+        "A Love Supreme",
+        "free improvisation",
+        "AMM",
+        "Derek Bailey",
+        "motor habit",
+        "spontaneity vs retrieval"
+      ]
+    },
+    {
+      "stage": 9,
+      "title": "Spectral Perception and the Limits of Pitch",
+      "description": "Pitched tone is a perceptual construct, not a physical object: what the auditory system extracts as a pitch from a complex waveform is the result of neural pattern-matching across partial frequencies, not a direct reading. When those partials are inharmonic — as in bells, gongs, or certain wood percussion — the pitch percept becomes ambiguous or multiple. Helmholtz's foundational work treated consonance as a function of beating between partials; Plomp and Levelt's work in the 1960s revised this toward a roughness model. Spectral composers exploit the fact that the boundary between a chord of pitches and a single timbre is a continuum, not a threshold: a dense cluster of very close-pitched tones fuses into what is heard as a single colour. The contested question is where pitch perception ends and timbre perception begins, and whether that boundary is fixed or context-dependent.",
+      "key_concepts": [
+        "pitch as percept",
+        "inharmonic partials",
+        "auditory fusion",
+        "beating",
+        "roughness",
+        "Helmholtz",
+        "Plomp-Levelt curve",
+        "spectral fusion",
+        "timbral chord",
+        "perceptual boundary"
+      ]
+    },
+    {
+      "stage": 10,
+      "title": "Musical Ontology and the Edge of What Is Well-Understood",
+      "description": "At the frontier of music research lie questions that resist resolution because they require agreement about what music fundamentally is. Is a musical work the score, the performance, the sound event, the listener's experience, or some ideal object that none of these exhausts? The repeatability problem: two performances of the same score are not the same work, but they are not wholly different works — standard identity conditions fail. Temporal flow and musical experience: does music require real-time unfolding to be music, or can a work be apprehended in a kind of atemporal overview? The enactivist position holds that music is not a thing heard but an activity jointly constituted by performers and listeners; this dissolves the work-concept but leaves open how musical meaning is transmitted across those different enactions. Cross-cultural perception research (Mehr et al., 2019; Savage et al.) finds both universals and radical divergences in how humans parse musical structure globally. None of these questions have consensus answers; they define the open horizon of musicology, acoustics, and philosophy of art simultaneously.",
+      "key_concepts": [
+        "musical ontology",
+        "work identity",
+        "score vs performance",
+        "repeatability",
+        "enactivism",
+        "temporal experience",
+        "cross-cultural universals",
+        "musical meaning",
+        "philosophy of music",
+        "perceptual divergence"
+      ]
+    }
+  ]
+}
