@@ -116,7 +116,13 @@ class GlobalWorkspace:
         self.state = (1 - WORKSPACE_ALPHA) * self.state + WORKSPACE_ALPHA * embedding
 
         # 4. extract concepts via nlp pipeline
-        weighted_concepts = extract_concepts(user_input)
+        # pass existing graph nodes so adj extraction can anchor to them
+        existing = self.graph.node_names()
+        weighted_concepts = extract_concepts(user_input, existing_concepts=existing)
+
+        # 4.5 decay all graph weights before adding this turn's contributions
+        # makes top-n reflect recent salience, not unbounded history
+        self.graph.decay()
 
         # 5. update the graph
         # batch the strings for co-occurrence edges first

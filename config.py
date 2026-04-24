@@ -28,6 +28,7 @@ SENTIMENT_SCALE   = 8.0       # magic number for lexicon normalisation
 
 # graph
 MAX_GRAPH_NODES   = 200      # chop the weakest node if we go over this
+GRAPH_DECAY       = 0.99     # multiplicative decay per turn on node/edge weights
 NER_BOOST_THRESHOLD = 1.5     # ner concepts above this get extra graph juice
 
 # nlp extractor weights
@@ -36,6 +37,7 @@ NER_DEFAULT_WEIGHT  = 1.2     # other ner entities get this
 NOUN_CHUNK_WEIGHT   = 1.1     # noun chunks
 POS_TOKEN_WEIGHT    = 1.0     # basic nouns
 MIN_CONCEPT_CHARS   = 3       # anything shorter is probably junk
+ACCEPTED_ADJ_DEPS   = {"amod", "acomp", "conj", "attr"}  # dep gates for adj extraction
 
 # memory
 MEMORY_COLLECTION = "episodic"

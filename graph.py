@@ -72,6 +72,22 @@ class ConceptGraph:
             return "Salient concepts: none"
         return f"Salient concepts: {', '.join(top)}"
 
+    def decay(self):
+        # apply multiplicative decay to all node and edge weights
+        # called once per turn from workspace before new concepts are added
+        # makes the top-n reflect recent salience not just total history
+        g = self._graph
+        rate = config.GRAPH_DECAY
+        for node in g.nodes:
+            g.nodes[node]["weight"] *= rate
+        for u, v in g.edges:
+            g[u][v]["weight"] *= rate
+
+    def node_names(self):
+        # return the set of all concept strings currently in the graph
+        # used by nlp_extractor to anchor adj extraction
+        return set(self._graph.nodes)
+
     # internal stuff
 
     def _prune_lowest_weight_node(self):
