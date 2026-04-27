@@ -46,3 +46,10 @@ TOP_CONCEPTS_N    = 5         # how many top concepts for the context string
 
 # not used yet but keeping it around
 SURPRISE_THRESHOLD = 0.35     # maybe for gating memory writes later idk
+
+# mega-longitudinal experiment (500 turns per domain)
+MEGA_LONGITUDINAL_TURNS_PER_DOMAIN = 500
+MEGA_LONGITUDINAL_BATCH_SIZE       = 50
+PROGRESS_WINDOW_LIVE               = 10
+CORPUS_MUSIC_PATH                  = "corpus/music_500.jsonl"
+CORPUS_SYSTEMS_PATH                = "corpus/systems_500.jsonl"

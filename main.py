@@ -1,15 +1,18 @@
 # main.py - topos experiment runner
 #
-# four modes:
-#   python main.py --chat          interactive conversation
-#   python main.py --experiment    automated a/b experiment
-#   python main.py --longitudinal  50 turn longitudinal priming experiment
-#   python main.py --autonomous    longitudinal priming + curiosity-driven exploration
+# five modes:
+#   python main.py --chat               interactive conversation
+#   python main.py --experiment         automated a/b experiment
+#   python main.py --longitudinal       50 turn longitudinal priming experiment
+#   python main.py --autonomous         longitudinal priming + curiosity-driven exploration
+#   python main.py --mega-longitudinal  500 turn/domain corpus-driven experiment
 
-#todo: add mega longitude mode with 100+ turn priming and test with new nlp stuff
 import argparse
+import json
+import time
 import numpy as np
 import torch
+from datetime import datetime
 from pathlib import Path
 
 from workspace import GlobalWorkspace
@@ -19,6 +22,7 @@ from integration import (
     WorkspaceIntegration, ActionProjection, QuestionGenerator,
     AdaptiveThreshold,
 )
+from corpus_loader import SingleFileCorpusLoader, CorpusLoadError
 import config
 
 
@@ -404,6 +408,204 @@ def autonomous_mode():
     print("=" * 65)
 
 
+def mega_longitudinal_mode(music_corpus, systems_corpus, batch_size,
+                          third_domain=None):
+    # 500 turn/domain corpus-driven experiment with full curiosity tracking
+    #
+    # processes each domain sequentially in batches of batch_size.
+    # logs every turn to runs/mega_longitudinal_<timestamp>.jsonl with
+    # extended fields including ensemble_weight_norms.
+    #
+    # no SLM calls — uses workspace.process() only (same as validation runs).
+    # the forward model runs online with measure-then-update protocol.
+
+    np.random.seed(42)
+    torch.manual_seed(42)
+
+    # ---- load corpora ----
+    corpus_specs = [
+        ("music", music_corpus),
+        ("systems", systems_corpus),
+    ]
+    if third_domain is not None:
+        corpus_specs.append(("third", third_domain))
+
+    corpora = []
+    for label, path in corpus_specs:
+        try:
+            loader = SingleFileCorpusLoader(path)
+        except CorpusLoadError as e:
+            print(f"ERROR loading {label} corpus: {e}")
+            return
+        if loader.total_turns % batch_size != 0:
+            print(f"ERROR: {label} corpus has {loader.total_turns} turns, "
+                  f"not evenly divisible by batch_size={batch_size}")
+            return
+        corpora.append((label, loader))
+        print(f"  Loaded {label} corpus: {path} "
+              f"({loader.total_turns} turns, {loader.domain})")
+
+    # ---- build workspace + forward model ----
+    ws = GlobalWorkspace()
+    encoder = StateEncoder(ws.embedder)
+    forward_model = EnsembleForwardModel(n_members=5, lr=1e-3)
+
+    # init diversity (validated: necessary for ensemble disagreement)
+    scales = [0.5, 0.8, 1.0, 1.5, 2.0]
+    for mlp, scale in zip(forward_model._members, scales):
+        with torch.no_grad():
+            for param in mlp.parameters():
+                param.mul_(scale)
+
+    action_proj = ActionProjection()
+
+    # progress signal: rolling error window
+    progress_window = config.PROGRESS_WINDOW_LIVE
+    error_history = []
+
+    # ---- prepare log ----
+    runs_dir = Path("runs")
+    runs_dir.mkdir(exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = runs_dir / f"mega_longitudinal_{timestamp}.jsonl"
+
+    print()
+    print("=" * 70)
+    print("MEGA-LONGITUDINAL EXPERIMENT")
+    print("=" * 70)
+    print(f"  Batch size: {batch_size}")
+    print(f"  Progress window K={progress_window}")
+    print(f"  Forward model: 5 members, lr=1e-3, bagging keep=0.6")
+    print(f"  Init scales: {scales}")
+    print(f"  Log: {log_path}")
+    print()
+
+    global_turn = 0
+
+    for domain_label, loader in corpora:
+        domain_name = loader.domain
+        num_batches = loader.total_turns // batch_size
+
+        print(f"\n{'=' * 70}")
+        print(f"  Domain: {domain_name} ({loader.total_turns} turns, "
+              f"{num_batches} batches of {batch_size})")
+        print(f"{'=' * 70}")
+
+        for batch_idx in range(num_batches):
+            batch_start_turn = global_turn + 1
+
+            for turn_in_batch in range(batch_size):
+                global_turn += 1
+                corpus_idx = loader.current_index  # 0-based
+                entry = loader.entry_at(corpus_idx)
+                text = loader.next()  # advances cursor
+
+                stage = entry["stage"]
+
+                # encode state BEFORE processing
+                z_t = encoder.encode(
+                    graph=ws.graph, affect=ws.affect, memory=ws.memory,
+                    input_embedding=ws.state, current_turn=ws.turn,
+                )
+
+                # action = projection of input embedding
+                input_emb = ws.embedder.embed(text)
+                a_t = action_proj.project(input_emb)
+
+                # 1. MEASURE: predict before seeing ground truth
+                mean_pred, epistemic = forward_model.predict(z_t, a_t)
+
+                # process (updates workspace state, no SLM)
+                ws.process(text)
+
+                # encode state AFTER processing
+                z_t1 = encoder.encode(
+                    graph=ws.graph, affect=ws.affect, memory=ws.memory,
+                    input_embedding=ws.state, current_turn=ws.turn,
+                )
+
+                # prediction error
+                prediction_error = float(np.linalg.norm(mean_pred - z_t1))
+
+                # progress signal
+                if len(error_history) > 0:
+                    window = error_history[-progress_window:]
+                    rolling_mean = sum(window) / len(window)
+                    progress_signal = rolling_mean - prediction_error
+                else:
+                    progress_signal = 0.0
+                error_history.append(prediction_error)
+
+                # 2. UPDATE: train on this sample (bagged)
+                forward_model.update_bagged(
+                    z_t, a_t, z_t1, keep_prob=0.6,
+                )
+
+                # workspace readouts
+                top_concepts = ws.graph.top_concepts(5)
+                arousal = ws.affect.arousal()
+                valence = ws.affect.valence()
+                state_norm = float(np.linalg.norm(ws.state))
+
+                # ensemble weight norms (L2 norm per member)
+                weight_norms = []
+                for mlp in forward_model._members:
+                    total = 0.0
+                    for param in mlp.parameters():
+                        total += param.data.norm().item() ** 2
+                    weight_norms.append(round(total ** 0.5, 6))
+
+                # log record
+                record = {
+                    "turn_index": global_turn,
+                    "domain": domain_name,
+                    "stage": stage,
+                    "batch_index": batch_idx + 1,
+                    "epistemic_uncertainty": epistemic,
+                    "prediction_error": prediction_error,
+                    "progress_signal": progress_signal,
+                    "top_5_concepts": top_concepts,
+                    "arousal": arousal,
+                    "valence": valence,
+                    "workspace_state_norm": state_norm,
+                    "ensemble_weight_norms": weight_norms,
+                }
+
+                with open(log_path, "a") as f:
+                    f.write(json.dumps(record) + "\n")
+
+            # batch summary
+            batch_end_turn = global_turn
+            print(f"    Batch {batch_idx + 1:2d} done  "
+                  f"(turns {batch_start_turn}-{batch_end_turn})  "
+                  f"epistemic={epistemic:.6f}  "
+                  f"error={prediction_error:.4f}  "
+                  f"progress={progress_signal:+.4f}  "
+                  f"concepts={top_concepts[:3]}")
+
+    # ---- summary ----
+    print()
+    print("=" * 70)
+    print("SUMMARY")
+    print("=" * 70)
+    print(f"  Total turns processed: {global_turn}")
+    print(f"  Log: {log_path}")
+    print(f"  Final top 10 concepts: {ws.graph.top_concepts(10)}")
+    print(f"  Final affect: {ws.affect.summary()}")
+    print(f"  Final workspace turn: {ws.turn}")
+
+    # ensemble weight norm divergence at end
+    final_norms = []
+    for mlp in forward_model._members:
+        total = 0.0
+        for param in mlp.parameters():
+            total += param.data.norm().item() ** 2
+        final_norms.append(round(total ** 0.5, 4))
+    print(f"  Final ensemble weight norms: {final_norms}")
+    print(f"  Weight norm std: {np.std(final_norms):.6f}")
+    print("=" * 70)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TOPOS experiment runner")
     group = parser.add_mutually_exclusive_group(required=True)
@@ -413,6 +615,22 @@ if __name__ == "__main__":
                        help="50-turn longitudinal priming experiment")
     group.add_argument("--autonomous", action="store_true",
                        help="Longitudinal priming + curiosity-driven exploration")
+    group.add_argument("--mega-longitudinal", action="store_true",
+                       help="500 turn/domain corpus-driven experiment")
+
+    # mega-longitudinal options
+    parser.add_argument("--music-corpus", type=str,
+                        default=config.CORPUS_MUSIC_PATH,
+                        help="Path to music corpus JSONL")
+    parser.add_argument("--systems-corpus", type=str,
+                        default=config.CORPUS_SYSTEMS_PATH,
+                        help="Path to systems corpus JSONL")
+    parser.add_argument("--batch-size", type=int,
+                        default=config.MEGA_LONGITUDINAL_BATCH_SIZE,
+                        help="Batch size (must divide evenly into corpus size)")
+    parser.add_argument("--third-domain", type=str, default=None,
+                        help="Optional third domain corpus JSONL")
+
     args = parser.parse_args()
 
     if args.chat:
@@ -421,5 +639,12 @@ if __name__ == "__main__":
         experiment_mode()
     elif args.longitudinal:
         longitudinal_mode()
+    elif args.mega_longitudinal:
+        mega_longitudinal_mode(
+            music_corpus=args.music_corpus,
+            systems_corpus=args.systems_corpus,
+            batch_size=args.batch_size,
+            third_domain=args.third_domain,
+        )
     else:
         autonomous_mode()

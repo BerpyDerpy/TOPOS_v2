@@ -97,9 +97,9 @@ def run_validation():
     torch.manual_seed(42)
 
     # ---- load corpus ----
-    corpus_pattern = "corpus/music_stage_*.jsonl"
+    corpus_pattern = "corpus/systems_stage_*.jsonl"
     print("=" * 70)
-    print("MUSIC CORPUS VALIDATION RUN")
+    print("SYSTEMS CORPUS VALIDATION RUN")
     print("=" * 70)
     print(f"  Corpus: {corpus_pattern}")
 
@@ -128,7 +128,7 @@ def run_validation():
     runs_dir = Path("runs")
     runs_dir.mkdir(exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_path = runs_dir / f"music_validation_{timestamp}.jsonl"
+    log_path = runs_dir / f"system_validation_{timestamp}.jsonl"
 
     # ---- per-turn tracking ----
     all_records = []

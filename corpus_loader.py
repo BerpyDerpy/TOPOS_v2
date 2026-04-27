@@ -268,6 +268,147 @@ class CorpusLoader:
 
 
 # =====================
+# single-file corpus loader
+# =====================
+# for mega-longitudinal mode: one JSONL file with globally contiguous
+# turn_index 1..N.  no fallback to programmatic generation.
+
+class SingleFileCorpusLoader:
+    """Load a single JSONL corpus file with globally contiguous turn indices.
+
+    Usage:
+        loader = SingleFileCorpusLoader("corpus/music_500.jsonl")
+        while True:
+            text = loader.next()  # returns None when exhausted
+            if text is None:
+                break
+    """
+
+    _REQUIRED_FIELDS = {"turn_index", "stage", "domain", "text"}
+
+    def __init__(self, file_path: str):
+        """Load and validate a single JSONL corpus file.
+
+        Raises CorpusLoadError if the file is missing, malformed, or has
+        non-contiguous turn indices.
+        """
+        path = Path(file_path)
+        if not path.exists():
+            raise CorpusLoadError(f"Corpus file not found: {file_path}")
+        if not path.is_file():
+            raise CorpusLoadError(f"Not a file: {file_path}")
+
+        self._entries: list[dict] = []
+        self._cursor: int = 0
+        self._load_and_validate(path)
+
+    def _load_and_validate(self, path: Path):
+        """Parse every line, validate fields, check contiguity."""
+        raw_lines = path.read_text().strip().splitlines()
+        if not raw_lines:
+            raise CorpusLoadError(f"Corpus file is empty: {path}")
+
+        observed_domain = None
+
+        for line_num, raw_line in enumerate(raw_lines, 1):
+            try:
+                record = json.loads(raw_line)
+            except json.JSONDecodeError as e:
+                raise CorpusLoadError(
+                    f"{path.name} line {line_num}: invalid JSON: {e}"
+                )
+
+            # required fields
+            missing = self._REQUIRED_FIELDS - set(record.keys())
+            if missing:
+                raise CorpusLoadError(
+                    f"{path.name} line {line_num}: "
+                    f"missing required fields: {missing}"
+                )
+
+            turn_index = record["turn_index"]
+            stage = record["stage"]
+            domain = record["domain"]
+            text = record["text"]
+
+            # type checks
+            if not isinstance(turn_index, int):
+                raise CorpusLoadError(
+                    f"{path.name} line {line_num}: "
+                    f"turn_index must be int, got {type(turn_index).__name__}"
+                )
+            if not isinstance(stage, int):
+                raise CorpusLoadError(
+                    f"{path.name} line {line_num}: "
+                    f"stage must be int, got {type(stage).__name__}"
+                )
+            if not isinstance(text, str) or not text.strip():
+                raise CorpusLoadError(
+                    f"{path.name} line {line_num}: "
+                    f"text must be a non-empty string"
+                )
+
+            # contiguous turn_index: must equal line_num (1-based)
+            if turn_index != line_num:
+                raise CorpusLoadError(
+                    f"{path.name} line {line_num}: "
+                    f"turn_index is {turn_index}, expected {line_num} "
+                    f"(turn_index must be contiguous from 1)"
+                )
+
+            # domain consistency
+            if observed_domain is None:
+                observed_domain = domain
+            elif domain != observed_domain:
+                raise CorpusLoadError(
+                    f"{path.name} line {line_num}: "
+                    f"domain '{domain}' does not match "
+                    f"expected domain '{observed_domain}'"
+                )
+
+            self._entries.append(record)
+
+    def next(self):
+        """Return the text of the next turn, or None when exhausted."""
+        if self._cursor >= len(self._entries):
+            return None
+        entry = self._entries[self._cursor]
+        self._cursor += 1
+        return entry["text"]
+
+    def reset(self):
+        """Reset the iterator to the beginning."""
+        self._cursor = 0
+
+    def entry_at(self, index: int) -> dict:
+        """Return the full record at a 0-based index."""
+        return self._entries[index]
+
+    @property
+    def domain(self) -> str:
+        if not self._entries:
+            return "unknown"
+        return self._entries[0]["domain"]
+
+    @property
+    def total_turns(self) -> int:
+        return len(self._entries)
+
+    @property
+    def current_index(self) -> int:
+        """0-based index of the next turn to be returned by next()."""
+        return self._cursor
+
+    def __len__(self) -> int:
+        return len(self._entries)
+
+    def __iter__(self) -> Iterator[Tuple[int, int, str]]:
+        """Yield (turn_index, stage, text) for each turn."""
+        for entry in self._entries:
+            yield entry["turn_index"], entry["stage"], entry["text"]
+
+
+# =====================
 # standalone test
 # =====================
 if __name__ == "__main__":
