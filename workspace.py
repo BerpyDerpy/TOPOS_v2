@@ -11,7 +11,6 @@ import config
 from config import (
     WORKSPACE_ALPHA, SENTIMENT_SCALE, NER_BOOST_THRESHOLD,
     MEMORY_RECALL_N, TOP_CONCEPTS_N,
-    VALENCE_POS, VALENCE_NEG, AROUSAL_HIGH, AROUSAL_MODERATE,
 )
 from embedder import Embedder
 from memory import EpisodicMemory
@@ -150,7 +149,7 @@ class GlobalWorkspace:
         return self.context_string()
 
     def context_string(self):
-        # builds a first person context block (< 120 words)
+        # builds a first person context block
         # uses tendency framing so the slm cant smooth it into generic prose
 
         # recall recent memories relevant to last input
@@ -173,26 +172,15 @@ class GlobalWorkspace:
         else:
             concepts_line = "No strong conceptual tendencies yet."
 
-        # mood phrasing based on valence and arousal
+        # R6: pass continuous affect values directly instead of bucketed
+        # mood strings. the slm interprets the numbers; we don't prescribe
+        # what arousal=0.7 or valence=-0.3 "feels like" in prose.
         v = self.affect.valence()
         a = self.affect.arousal()
-        if v > VALENCE_POS:
-            mood = "You feel a current of warmth and engagement."
-        elif v < VALENCE_NEG:
-            mood = "There is a restless, searching quality to your attention."
-        else:
-            mood = "Your inner state is watchful and still."
-
-        if a > AROUSAL_HIGH:
-            intensity = "Your mind is active, turning things over."
-        elif a > AROUSAL_MODERATE:
-            intensity = "A steady hum of attention."
-        else:
-            intensity = "Quiet. Unhurried."
 
         return (
             "[Workspace state]\n"
-            f"{mood} {intensity}\n"
+            f"Arousal: {a:.2f}  Valence: {v:+.2f}\n"
             f"Surprise this turn: {self._last_surprise:.2f}\n"
             f"{concepts_line}\n"
             f"You keep returning to: {recall_lines}"

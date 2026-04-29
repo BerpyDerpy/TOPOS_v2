@@ -1,0 +1,232 @@
+{
+  "run_log": "runs/mega_longitudinal_20260427_093154.jsonl",
+  "turns_analysed": 20,
+  "per_turn": [
+    {
+      "turn_index": 981,
+      "entropy": 1.6089280813051359,
+      "top_5": [
+        "system",
+        "memory",
+        "cpu",
+        "datum",
+        "consistency"
+      ]
+    },
+    {
+      "turn_index": 982,
+      "entropy": 1.6089794678994718,
+      "top_5": [
+        "system",
+        "memory",
+        "cpu",
+        "datum",
+        "consistency"
+      ]
+    },
+    {
+      "turn_index": 983,
+      "entropy": 1.6090255968092182,
+      "top_5": [
+        "system",
+        "memory",
+        "cpu",
+        "datum",
+        "consistency"
+      ]
+    },
+    {
+      "turn_index": 984,
+      "entropy": 1.6086387499713792,
+      "top_5": [
+        "system",
+        "memory",
+        "cpu",
+        "kernel",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 985,
+      "entropy": 1.6078476955629577,
+      "top_5": [
+        "system",
+        "memory",
+        "cpu",
+        "kernel",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 986,
+      "entropy": 1.6066815204512213,
+      "top_5": [
+        "memory",
+        "system",
+        "cpu",
+        "kernel",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 987,
+      "entropy": 1.605168526166756,
+      "top_5": [
+        "system",
+        "memory",
+        "cpu",
+        "kernel",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 988,
+      "entropy": 1.6033361579758671,
+      "top_5": [
+        "system",
+        "memory",
+        "cpu",
+        "kernel",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 989,
+      "entropy": 1.6012109452095982,
+      "top_5": [
+        "system",
+        "memory",
+        "cpu",
+        "kernel",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 990,
+      "entropy": 1.5988184523166595,
+      "top_5": [
+        "system",
+        "memory",
+        "kernel",
+        "cpu",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 991,
+      "entropy": 1.596183240043044,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 992,
+      "entropy": 1.5933288360928306,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 993,
+      "entropy": 1.5902777145913283,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "datum"
+      ]
+    },
+    {
+      "turn_index": 994,
+      "entropy": 1.5873485564822771,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "application"
+      ]
+    },
+    {
+      "turn_index": 995,
+      "entropy": 1.5838897783415748,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "application"
+      ]
+    },
+    {
+      "turn_index": 996,
+      "entropy": 1.5799261642696207,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "application"
+      ]
+    },
+    {
+      "turn_index": 997,
+      "entropy": 1.582323764846966,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "application"
+      ]
+    },
+    {
+      "turn_index": 998,
+      "entropy": 1.5839410021082023,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "application",
+        "cpu"
+      ]
+    },
+    {
+      "turn_index": 999,
+      "entropy": 1.5848070124753686,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "application"
+      ]
+    },
+    {
+      "turn_index": 1000,
+      "entropy": 1.5850069076619095,
+      "top_5": [
+        "memory",
+        "system",
+        "kernel",
+        "cpu",
+        "application"
+      ]
+    }
+  ],
+  "mean_entropy": 1.5962834085290694,
+  "std_entropy": 0.010462354865188477,
+  "mean_jaccard": 0.9649122807017543,
+  "std_jaccard": 0.10229740166395265,
+  "verdict": "CONVERGED",
+  "timestamp": "2026-04-29T12:54:18.380351+00:00"
+}

@@ -1,0 +1,232 @@
+{
+  "run_log": "runs/mega_longitudinal_20260427_093154.jsonl",
+  "turns_analysed": 20,
+  "per_turn": [
+    {
+      "turn_index": 231,
+      "entropy": 1.598311468588155,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "harmonic"
+      ]
+    },
+    {
+      "turn_index": 232,
+      "entropy": 1.5995680026298646,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "harmonic"
+      ]
+    },
+    {
+      "turn_index": 233,
+      "entropy": 1.600673636645569,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "harmonic"
+      ]
+    },
+    {
+      "turn_index": 234,
+      "entropy": 1.601647971142769,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "harmonic"
+      ]
+    },
+    {
+      "turn_index": 235,
+      "entropy": 1.6003261745101005,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "equal"
+      ]
+    },
+    {
+      "turn_index": 236,
+      "entropy": 1.5986197485764635,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "equal"
+      ]
+    },
+    {
+      "turn_index": 237,
+      "entropy": 1.596567136984897,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "equal"
+      ]
+    },
+    {
+      "turn_index": 238,
+      "entropy": 1.594204277818023,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "equal"
+      ]
+    },
+    {
+      "turn_index": 239,
+      "entropy": 1.5915647264952504,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "equal"
+      ]
+    },
+    {
+      "turn_index": 240,
+      "entropy": 1.5886797735670697,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "different",
+        "equal"
+      ]
+    },
+    {
+      "turn_index": 241,
+      "entropy": 1.5855785579964026,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 242,
+      "entropy": 1.5822881763395829,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 243,
+      "entropy": 1.5788337881097478,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 244,
+      "entropy": 1.5752387175118103,
+      "top_5": [
+        "interval",
+        "pitch",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 245,
+      "entropy": 1.5725564174079252,
+      "top_5": [
+        "interval",
+        "pitch",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 246,
+      "entropy": 1.5770969843364742,
+      "top_5": [
+        "interval",
+        "pitch",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 247,
+      "entropy": 1.581017650776645,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 248,
+      "entropy": 1.5844149359727855,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 249,
+      "entropy": 1.5873678607208106,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "equal",
+        "different"
+      ]
+    },
+    {
+      "turn_index": 250,
+      "entropy": 1.590700456489744,
+      "top_5": [
+        "pitch",
+        "interval",
+        "music",
+        "equal",
+        "harmonic"
+      ]
+    }
+  ],
+  "mean_entropy": 1.5892628231310044,
+  "std_entropy": 0.009102051242804566,
+  "mean_jaccard": 0.9649122807017543,
+  "std_jaccard": 0.10229740166395265,
+  "verdict": "CONVERGED",
+  "timestamp": "2026-04-29T12:54:28.950665+00:00"
+}

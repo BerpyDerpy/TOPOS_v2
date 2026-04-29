@@ -49,10 +49,11 @@ Applied to TOPOS:
 | Graph | `graph.py` | Weighted directed concept graph | NetworkX DiGraph | RAM |
 | NLP Extractor | `nlp_extractor.py` | spaCy-based concept extraction | spaCy model (lazy-loaded) | RAM |
 | Workspace | `workspace.py` | Central orchestrator, context assembly, SLM call | 384-d state vector + turn counter | RAM |
-| State Encoder | `state_encoder.py` | Workspace state → R^448 latent vector | Four linear projections (trainable) | RAM |
+| State Encoder | `state_encoder.py` | Workspace state → R^448 latent vector | Four linear projections (frozen random) | RAM |
 | Forward Model | `forward_model.py` | Ensemble MLP predicting z_{t+1} from (z_t, a_t) | 5× MLP weights + optimiser state | RAM |
+| Exploration Gen | `integration.py` | Open-ended SLM generation from workspace state (R2) | Stateless |  -  |
 | Integration | `integration.py` | Curiosity-wrapped cognitive loop, autonomous exploration | Orchestration layer |  -  |
-| Main | `main.py` | CLI entry point: `--chat`, `--experiment`, `--longitudinal`, `--autonomous` |  -  |  -  |
+| Main | `main.py` | CLI entry point: `--chat`, `--experiment`, `--longitudinal`, `--autonomous`, `--experiment-6` |  -  |  -  |
 
 ### Data Flow  -  Single Turn
 
@@ -160,7 +161,7 @@ Readouts:
 - **Arousal** = `‖state‖₂ / √64 ∈ [0, 1]`  -  how activated the system is
 - **Valence** = `mean(state[:32])`, clipped to `[-1, 1]`  -  positive/negative register
 
-Thresholds for context string framing: arousal `high > 0.6`, `moderate > 0.3`; valence `positive > 0.2`, `negative < -0.2`.
+Thresholds for the `summary()` method readout: arousal `high > 0.6`, `moderate > 0.3`; valence `positive > 0.2`, `negative < -0.2`. Note: as of R6, these thresholds are no longer used in the context string  -  raw continuous floats are passed instead. They remain in `affect.py` for the `summary()` convenience method.
 
 The affect module receives sentiment as a pre-computed float  -  the sentiment computation itself (`_lexicon_sentiment()`) lives in `workspace.py`, not here. This means `affect.py` is not self-contained for independent testing. Design decision: keeps the lexicon near the context string logic that consumes it.
 
@@ -208,11 +209,11 @@ The central orchestrator. Owns instances of all sub-modules and exposes two publ
 
 **`generate(user_input) → str`**  -  Calls `process()` then sends `system_prompt + context_string + user_input` to Ollama. One call = one full cognitive turn + SLM inference.
 
-**Context string assembly:** Reads from Memory (recall 2), Graph (top 5 concepts), Affect (arousal, valence). Frames in first-person directive language:
+**Context string assembly (R6 update):** Reads from Memory (recall 2), Graph (top 5 concepts), Affect (arousal, valence as raw floats). No longer uses bucketed mood strings.
 
 ```
 [Workspace state]
-{mood based on valence} {intensity based on arousal}
+Arousal: {a:.2f}  Valence: {v:+.2f}
 Surprise this turn: {surprise:.2f}
 You find yourself drawn to: {concepts}. These are not topics  -  they are how you think.
 You keep returning to: {recalled memories with turn numbers}
@@ -347,6 +348,27 @@ The system prompt is also directive: "Respond from inside that state  -  your sp
 
 A known remaining issue: base model closing conventions (polite questions, generic summaries) still leak through. Workspace conditioning is strongest in response bodies; endings revert to base model defaults. The soft prompt projection is the prescribed fix.
 
+### 4.8 The Mind vs. Mouth Problem (Post-Experiment 6)
+
+Experiment 6 (with R1–R6 architectural fixes) revealed a fundamental measurement problem: **the SLM is an unreliable proxy for the workspace state.**
+
+The workspace modules (concept graph, affect, episodic memory) constitute the "mind"  -  they genuinely evolve with input. The concept graph's topology changes, the affect vector shifts, memory accumulates. These are real, measurable state changes.
+
+But the SLM is the "mouth"  -  it translates mind-state to language, and that translation is lossy, biased, and subject to training artifacts we don't control. When we removed the instruction to ask questions (R2), the SLM stopped asking questions entirely  -  not because the workspace lacked uncertainty, but because the base model's completion habits don't include spontaneous interrogation from a context string.
+
+Key implication: **evaluating curiosity by reading SLM output conflates two separate variables:**
+
+1. Whether the workspace state genuinely encodes uncertainty (measurable directly via epistemic signal, graph entropy, concept diversity)
+2. Whether the SLM faithfully expresses that uncertainty in language (contingent on model training, prompt format, completion conventions)
+
+The mouth can disobey the mind and we would never know.
+
+**Resolution direction:** Measure the mind directly. Graph topology, affect trajectory, epistemic uncertainty curves, concept entropy  -  these are the mind's properties. SLM output is useful for demonstration and interaction but should not be the primary measurement channel for research claims about curiosity or personality.
+
+This insight motivates two development directions:
+- **Direct workspace visualization**  -  render the mind's state in real time (graph, affect, epistemic signal) as the primary observational interface
+- **Soft prompt projection**  -  bypass the lossy text-serialization channel entirely by injecting workspace state directly into the SLM's activation space
+
 ---
 
 ## 5. Curiosity Mechanism
@@ -405,7 +427,7 @@ z_t = [z_graph | z_affect | z_memory | z_input]
        R^128     R^64       R^128      R^128
 ```
 
-Each subvector is produced by a learned linear projection (no bias, no activation, orthogonal initialisation):
+Each subvector is produced by a frozen linear projection (no bias, no activation, orthogonal initialisation). Note: these projections are never trained  -  they are random orthogonal matrices that preserve input norms and distances (Johnson-Lindenstrauss property). They were originally labelled "learned projections" but Experiment 6 audit confirmed no optimizer updates flow through them.
 
 | Subvector | Source | Projection | Aggregation |
 |---|---|---|---|

@@ -28,7 +28,8 @@ SENTIMENT_SCALE   = 8.0       # magic number for lexicon normalisation
 
 # graph
 MAX_GRAPH_NODES   = 200      # chop the weakest node if we go over this
-GRAPH_DECAY       = 0.99     # multiplicative decay per turn on node/edge weights
+GRAPH_DECAY       = 0.95     # multiplicative decay per turn on node/edge weights
+                              # was 0.99 — too gentle, caused attractor lock-in
 NER_BOOST_THRESHOLD = 1.5     # ner concepts above this get extra graph juice
 
 # nlp extractor weights

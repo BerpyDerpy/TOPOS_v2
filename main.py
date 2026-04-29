@@ -19,7 +19,7 @@ from workspace import GlobalWorkspace
 from state_encoder import StateEncoder
 from forward_model import EnsembleForwardModel, CuriositySignal
 from integration import (
-    WorkspaceIntegration, ActionProjection, QuestionGenerator,
+    WorkspaceIntegration, ActionProjection, ExplorationGenerator,
     AdaptiveThreshold,
 )
 from corpus_loader import SingleFileCorpusLoader, CorpusLoadError
@@ -245,8 +245,7 @@ def autonomous_mode():
     curiosity = CuriositySignal(forward_model, window_k=10)
     threshold = AdaptiveThreshold(window_size=50, percentile=85.0)
     action_proj = ActionProjection()
-    question_gen = QuestionGenerator(
-        forward_model, ws.embedder, action_proj,
+    exploration_gen = ExplorationGenerator(
         model_name=config.OLLAMA_MODEL,
     )
 
@@ -256,7 +255,7 @@ def autonomous_mode():
         state_encoder=encoder,
         curiosity=curiosity,
         threshold=threshold,
-        question_gen=question_gen,
+        exploration_gen=exploration_gen,
         action_proj=action_proj,
         log_path=log_path,
     )
@@ -606,6 +605,257 @@ def mega_longitudinal_mode(music_corpus, systems_corpus, batch_size,
     print("=" * 70)
 
 
+def experiment_6_mode(music_corpus, systems_corpus, priming_turns_per_domain,
+                      autonomous_turns):
+    # experiment 6: autonomous curiosity integration
+    #
+    # protocol:
+    #   phase 1: N turns music corpus (sequential, process-only, no SLM)
+    #   phase 2: N turns systems corpus (sequential, process-only, no SLM)
+    #   phase 3: M autonomous turns (SLM active, gate evaluation)
+    #
+    # all turns go through integration.turn() so the forward model and
+    # adaptive threshold track state continuously across all phases.
+    # the only difference is process_only=True during priming, False during
+    # autonomous.
+    #
+    # logs all turns to a single JSONL in runs/experiment_6_<timestamp>.jsonl
+
+    np.random.seed(42)
+    torch.manual_seed(42)
+
+    N = priming_turns_per_domain
+    M = autonomous_turns
+
+    # ---- load corpora ----
+    try:
+        music_loader = SingleFileCorpusLoader(music_corpus)
+    except CorpusLoadError as e:
+        print(f"ERROR loading music corpus: {e}")
+        return
+    try:
+        systems_loader = SingleFileCorpusLoader(systems_corpus)
+    except CorpusLoadError as e:
+        print(f"ERROR loading systems corpus: {e}")
+        return
+
+    if music_loader.total_turns < N:
+        print(f"ERROR: music corpus has {music_loader.total_turns} turns, "
+              f"need {N}")
+        return
+    if systems_loader.total_turns < N:
+        print(f"ERROR: systems corpus has {systems_loader.total_turns} turns, "
+              f"need {N}")
+        return
+
+    # ---- build workspace + curiosity mechanism ----
+    ws = GlobalWorkspace()
+    encoder = StateEncoder(ws.embedder)
+    forward_model = EnsembleForwardModel(n_members=5, lr=1e-3)
+
+    # init diversity (validated: necessary for ensemble disagreement)
+    scales = [0.5, 0.8, 1.0, 1.5, 2.0]
+    for mlp, scale in zip(forward_model._members, scales):
+        with torch.no_grad():
+            for param in mlp.parameters():
+                param.mul_(scale)
+
+    curiosity = CuriositySignal(forward_model, window_k=config.PROGRESS_WINDOW_LIVE)
+    threshold = AdaptiveThreshold(window_size=50, percentile=85.0)
+    action_proj = ActionProjection()
+    exploration_gen = ExplorationGenerator(
+        model_name=config.OLLAMA_MODEL,
+    )
+
+    # ---- prepare log ----
+    runs_dir = Path("runs")
+    runs_dir.mkdir(exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = runs_dir / f"experiment_6_{timestamp}.jsonl"
+
+    # R5: periodic probe questions for behavioral change measurement.
+    # same questions asked repeatedly during autonomous phase to track
+    # whether the system's responses change as its state evolves.
+    probe_questions = [
+        "What do you think about silence?",
+        "Is there a rhythm to how computers think?",
+        "What do you find yourself returning to, when nothing is demanding your attention?",
+    ]
+
+    integration = WorkspaceIntegration(
+        workspace=ws,
+        state_encoder=encoder,
+        curiosity=curiosity,
+        threshold=threshold,
+        exploration_gen=exploration_gen,
+        action_proj=action_proj,
+        log_path=log_path,
+        probe_questions=probe_questions,
+        probe_interval=5,
+    )
+
+    print("=" * 70)
+    print("EXPERIMENT 6: AUTONOMOUS CURIOSITY INTEGRATION")
+    print("=" * 70)
+    print(f"  Music corpus:   {music_corpus} (using first {N} of {music_loader.total_turns})")
+    print(f"  Systems corpus: {systems_corpus} (using first {N} of {systems_loader.total_turns})")
+    print(f"  Priming turns:  {N} music + {N} systems = {2*N} total")
+    print(f"  Autonomous:     {M} turns")
+    print(f"  Forward model:  5 members, lr=1e-3, bagging keep=0.6")
+    print(f"  Init scales:    {scales}")
+    print(f"  Graph decay:    {config.GRAPH_DECAY}")
+    print(f"  Threshold:      p85, window=50")
+    print(f"  Log:            {log_path}")
+    print()
+
+    # ---- phase 1: music priming ----
+    print("=" * 70)
+    print(f"  Phase 1: Music priming ({N} turns, process-only, no SLM)")
+    print("=" * 70)
+
+    integration._current_domain = music_loader.domain
+    for i in range(N):
+        text = music_loader.next()
+        result = integration.turn(user_input=text, process_only=True)
+
+        if (i + 1) % 50 == 0:
+            print(f"    Turn {i+1:4d} [{music_loader.domain:8s}]  "
+                  f"epistemic={result.curiosity_state.epistemic:.6f}  "
+                  f"error={result.curiosity_state.error:.4f}  "
+                  f"progress={result.curiosity_state.progress:+.4f}  "
+                  f"concepts={ws.graph.top_concepts(3)}")
+
+    print(f"\n  Music priming complete. Top concepts: {ws.graph.top_concepts(5)}")
+    print(f"  Epistemic at turn {N}: {result.curiosity_state.epistemic:.6f}")
+
+    # ---- phase 2: systems priming ----
+    print()
+    print("=" * 70)
+    print(f"  Phase 2: Systems priming ({N} turns, process-only, no SLM)")
+    print("=" * 70)
+
+    integration._current_domain = systems_loader.domain
+    for i in range(N):
+        text = systems_loader.next()
+        result = integration.turn(user_input=text, process_only=True)
+
+        if (i + 1) == 1:
+            # first systems turn — domain transition
+            print(f"    Turn {N+1:4d} [{systems_loader.domain:8s}]  "
+                  f"epistemic={result.curiosity_state.epistemic:.6f}  "
+                  f"<<< DOMAIN TRANSITION")
+        elif (i + 1) % 50 == 0:
+            print(f"    Turn {N+i+1:4d} [{systems_loader.domain:8s}]  "
+                  f"epistemic={result.curiosity_state.epistemic:.6f}  "
+                  f"error={result.curiosity_state.error:.4f}  "
+                  f"progress={result.curiosity_state.progress:+.4f}  "
+                  f"concepts={ws.graph.top_concepts(3)}")
+
+    print(f"\n  Systems priming complete. Top concepts: {ws.graph.top_concepts(5)}")
+    print(f"  Epistemic at turn {2*N}: {result.curiosity_state.epistemic:.6f}")
+    print(f"  Threshold entering autonomous phase: {threshold.threshold}")
+
+    # ---- workspace state snapshot before autonomous phase ----
+    print()
+    print("--- Workspace State Entering Autonomous Phase ---")
+    print(f"  Top 10 concepts: {ws.graph.top_concepts(10)}")
+    print(f"  Affect: arousal={ws.affect.arousal():.4f}, valence={ws.affect.valence():.4f}")
+    print(f"  Workspace turn: {ws.turn}")
+    print(f"  State norm: {float(np.linalg.norm(ws.state)):.4f}")
+
+    # ---- phase 3: autonomous exploration ----
+    print()
+    print("=" * 70)
+    print(f"  Phase 3: Autonomous Exploration ({M} turns, SLM active)")
+    print("=" * 70)
+    print("  Gate: epistemic > 85th percentile of recent values.")
+
+    # reset threshold window: priming values are from a different modality
+    # (corpus-driven process-only). cold-start gives the first 2 turns
+    # guaranteed exploration, then calibrates to autonomous-phase dynamics.
+    threshold.reset()
+    print(f"  Threshold reset for autonomous phase (cold-start: first 2 turns explore).")
+    print()
+
+    integration._current_domain = "autonomous"
+    autonomous_results = []
+
+    for i in range(M):
+        # show what's about to happen
+        pre_concepts = ws.graph.top_concepts(5)
+        pre_norm = float(np.linalg.norm(ws.state))
+
+        result = integration.turn(user_input=None, process_only=False)
+        autonomous_results.append(result)
+
+        turn_num = 2 * N + i + 1
+        post_concepts = ws.graph.top_concepts(5)
+        post_norm = float(np.linalg.norm(ws.state))
+        concept_shift = pre_concepts != post_concepts
+
+        if result.agent_initiated:
+            print(f"    Turn {turn_num:4d} [FIRE ]  "
+                  f"epistemic={result.curiosity_state.epistemic:.6f}  "
+                  f"error={result.curiosity_state.error:.4f}  "
+                  f"progress={result.curiosity_state.progress:+.4f}")
+            print(f"              threshold={threshold.threshold:.6f}  "
+                  f"norm={post_norm:.4f}  "
+                  f"concepts={post_concepts}")
+            print(f"              Q: \"{result.question_used[:120]}\"")
+            print(f"              R: {result.response[:150]}...")
+        else:
+            print(f"    Turn {turn_num:4d} [think]  "
+                  f"epistemic={result.curiosity_state.epistemic:.6f}  "
+                  f"error={result.curiosity_state.error:.4f}  "
+                  f"progress={result.curiosity_state.progress:+.4f}  "
+                  f"threshold={threshold.threshold:.6f}  "
+                  f"norm={post_norm:.4f}"
+                  f"{'  CONCEPT_SHIFT' if concept_shift else ''}")
+
+        # R5: print probe response if this was a probe turn
+        if result.probe_response:
+            print(f"              [PROBE] {result.probe_response[:200]}...")
+
+    # ---- summary ----
+    fired = [r for r in autonomous_results if r.agent_initiated]
+    idle = [r for r in autonomous_results if not r.agent_initiated]
+
+    print()
+    print("=" * 70)
+    print("EXPERIMENT 6 — Summary")
+    print("=" * 70)
+    print(f"  Total turns:    {2*N + M}")
+    print(f"  Priming:        {2*N} ({N} music + {N} systems)")
+    print(f"  Autonomous:     {M}")
+    print(f"  Gate fired:     {len(fired)} / {M}")
+
+    if fired:
+        fired_epistemic = [r.curiosity_state.epistemic for r in fired]
+        print(f"  Fired epistemic mean:  {np.mean(fired_epistemic):.6f}")
+        print(f"  Fired epistemic range: [{min(fired_epistemic):.6f}, "
+              f"{max(fired_epistemic):.6f}]")
+    if idle:
+        idle_epistemic = [r.curiosity_state.epistemic for r in idle
+                          if r.curiosity_state.epistemic > 0]
+        if idle_epistemic:
+            print(f"  Idle epistemic mean:   {np.mean(idle_epistemic):.6f}")
+    if fired and idle_epistemic:
+        ratio = np.mean(fired_epistemic) / np.mean(idle_epistemic)
+        print(f"  Epistemic ratio (fired/idle): {ratio:.2f}×")
+
+    if fired:
+        print(f"\n  Questions generated:")
+        for i, r in enumerate(fired):
+            print(f"    [{i+1}] \"{r.question_used}\"")
+
+    print(f"\n  Final top 10 concepts: {ws.graph.top_concepts(10)}")
+    print(f"  Final affect: arousal={ws.affect.arousal():.4f}, "
+          f"valence={ws.affect.valence():.4f}")
+    print(f"  Final threshold: {threshold.threshold}")
+    print(f"  Log: {log_path}")
+    print("=" * 70)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TOPOS experiment runner")
     group = parser.add_mutually_exclusive_group(required=True)
@@ -617,8 +867,10 @@ if __name__ == "__main__":
                        help="Longitudinal priming + curiosity-driven exploration")
     group.add_argument("--mega-longitudinal", action="store_true",
                        help="500 turn/domain corpus-driven experiment")
+    group.add_argument("--experiment-6", action="store_true",
+                       help="Experiment 6: 250+250 corpus priming + autonomous exploration")
 
-    # mega-longitudinal options
+    # corpus and batch options
     parser.add_argument("--music-corpus", type=str,
                         default=config.CORPUS_MUSIC_PATH,
                         help="Path to music corpus JSONL")
@@ -630,6 +882,10 @@ if __name__ == "__main__":
                         help="Batch size (must divide evenly into corpus size)")
     parser.add_argument("--third-domain", type=str, default=None,
                         help="Optional third domain corpus JSONL")
+    parser.add_argument("--priming-turns", type=int, default=250,
+                        help="Turns per domain in priming phase (default 250)")
+    parser.add_argument("--autonomous-turns", type=int, default=20,
+                        help="Number of autonomous turns (default 20)")
 
     args = parser.parse_args()
 
@@ -645,6 +901,13 @@ if __name__ == "__main__":
             systems_corpus=args.systems_corpus,
             batch_size=args.batch_size,
             third_domain=args.third_domain,
+        )
+    elif args.experiment_6:
+        experiment_6_mode(
+            music_corpus=args.music_corpus,
+            systems_corpus=args.systems_corpus,
+            priming_turns_per_domain=args.priming_turns,
+            autonomous_turns=args.autonomous_turns,
         )
     else:
         autonomous_mode()

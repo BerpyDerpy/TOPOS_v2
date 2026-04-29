@@ -71,70 +71,58 @@ class ActionProjection(nn.Module):
 
 
 # =====================
-# question generator
+# exploration generator
 # =====================
 
-# prompt for candidate generation. the workspace context_string does all
-# the steering, this just asks the model to surface its own uncertainty
-_CANDIDATE_PROMPT = """\
+# R2: open-ended prompt — no instruction to produce questions.
+# the slm generates freely from workspace state. if it asks questions,
+# that's genuine curiosity. if it doesn't, the state doesn't encode
+# real uncertainty.  either outcome is informative.
+_EXPLORATION_PROMPT = """\
 Below is your current internal state.
 
 {context_string}
 
-Given this state, what are you genuinely uncertain about right now?
-List exactly 5 questions things you find yourself wanting to know,
-not questions for anyone else.  Each question should be a single
-sentence.  Number them 1-5.
+Continue from this state. Follow whatever feels most unresolved
+or incomplete. One to two paragraphs.
 """
 
 
-class QuestionGenerator:
-    # generates an autonomous introspective question when exploration is warranted
+class ExplorationGenerator:
+    # generates free-form exploration text when the epistemic gate opens.
     #
-    # strategy (option b, slm scored candidates):
-    #   1. prompt the slm with current workspace context to produce 5 candidates
-    #   2. embed each candidate, project into action space
-    #   3. score each by epistemic uncertainty from the ensemble
-    #   4. return the candidate with highest epistemic score
+    # key change from QuestionGenerator (R2):
+    #   - does NOT instruct the slm to produce questions
+    #   - lets the slm generate whatever naturally follows from the
+    #     workspace state
+    #   - detects whether the output contains questions (for logging,
+    #     not for control flow)
+    #
+    # this means "curiosity" is measured by whether the system
+    # spontaneously asks questions, not by whether it complies
+    # with a prompt that demands them.
 
-    def __init__(self, forward_model, embedder, action_proj, model_name=config.OLLAMA_MODEL):
-        self._model = forward_model
-        self._embedder = embedder
-        self._action_proj = action_proj
+    def __init__(self, model_name=config.OLLAMA_MODEL):
         self._model_name = model_name
 
-    def generate(self, z_t, context_string, workspace):
-        # produce the highest epistemic introspective question
+    def generate(self, context_string):
+        # produce free-form exploration text from the current workspace state.
         #
-        # z_t: shape (448,) current state vector
         # context_string: the current workspace context string
-        # workspace: the workspace instance (not used right now but available)
         #
-        # returns (question, epistemic_score) or None if parsing fails
-        candidates = self._generate_candidates(context_string)
-        if not candidates:
+        # returns (exploration_text, has_questions) or None if generation fails.
+        text = self._call_slm(context_string)
+        if text is None:
             return None
 
-        best_q = None
-        best_score = -1.0
-
-        for q in candidates:
-            emb = self._embedder.embed(q)
-            a_i = self._action_proj.project(emb)
-            _, epistemic_i = self._model.predict(z_t, a_i)
-            if epistemic_i > best_score:
-                best_score = epistemic_i
-                best_q = q
-
-        if best_q is None:
-            return None
-        return best_q, best_score
+        has_questions = self._detect_questions(text)
+        return text, has_questions
 
     # internal stuff
 
-    def _generate_candidates(self, context_string):
-        # calls the slm and parses numbered questions out of it
-        prompt = _CANDIDATE_PROMPT.format(context_string=context_string)
+    def _call_slm(self, context_string):
+        # single slm call with open-ended prompt
+        prompt = _EXPLORATION_PROMPT.format(context_string=context_string)
 
         try:
             response = ollama.chat(
@@ -143,26 +131,26 @@ class QuestionGenerator:
                     {"role": "user", "content": prompt},
                 ],
             )
-            raw = response["message"]["content"]
+            raw = response["message"]["content"].strip()
         except Exception:
-            return []
+            return None
 
-        return self._parse_candidates(raw)
+        if len(raw) < 10:
+            return None
+        return raw
 
     @staticmethod
-    def _parse_candidates(raw):
-        # extract numbered questions from slm output
-        # handles formats like: 1. What is... / 1) What is... / 1: What is...
-        pattern = re.compile(r"^\s*\d+[.):\-]\s*(.+)", re.MULTILINE)
-        matches = pattern.findall(raw)
-
-        questions = []
-        for m in matches:
-            q = m.strip().rstrip(".")
-            if len(q) > 10:  # filter trivially short stuff
-                questions.append(q)
-
-        return questions[:5]  # cap at 5
+    def _detect_questions(text):
+        # detect whether the exploration text contains interrogative forms.
+        # this is a measurement, not a filter — we log it but don't act on it.
+        # checks for: sentences ending in '?', or starting with wh-words/how/do/is/are/can
+        if "?" in text:
+            return True
+        interrogative = re.compile(
+            r"(?:^|(?<=\.\s))(?:what|why|how|where|when|who|which|do|does|is|are|can|could|would|should)\s",
+            re.IGNORECASE | re.MULTILINE,
+        )
+        return bool(interrogative.search(text))
 
 
 # =====================
@@ -175,7 +163,10 @@ class TurnResult:
     response: str
     curiosity_state: CuriosityState
     agent_initiated: bool
-    question_used: Optional[str]
+    question_used: Optional[str]       # exploration text (may or may not contain questions)
+    has_questions: bool = False         # whether the exploration text contained interrogative forms
+    response_integrated: bool = False   # R1: whether the slm response was fed back through workspace
+    probe_response: Optional[str] = None  # R5: response to periodic probe question, if this was a probe turn
 
 
 # =====================
@@ -196,75 +187,185 @@ class WorkspaceIntegration:
     #   - jsonl logging of every turn's curiosity signals
 
     def __init__(self, workspace, state_encoder, curiosity, threshold,
-                 question_gen, action_proj, log_path=_DEFAULT_LOG_PATH):
+                 exploration_gen, action_proj, log_path=_DEFAULT_LOG_PATH,
+                 probe_questions=None, probe_interval=5):
         self._ws = workspace
         self._encoder = state_encoder
         self._curiosity = curiosity
         self._threshold = threshold
-        self._question_gen = question_gen
+        self._exploration_gen = exploration_gen
         self._action_proj = action_proj
         self._log_path = log_path
+
+        # R5: periodic probe questions for behavioral change measurement
+        # probe_questions: list of fixed questions to cycle through
+        # probe_interval: every N autonomous turns, inject a probe instead
+        self._probe_questions = probe_questions or []
+        self._probe_interval = probe_interval
+        self._autonomous_count = 0  # counts autonomous turns for probe scheduling
 
         # need a previous z_t for the first curiosity step
         # on the very first turn, encode the empty workspace state
         self._last_z = None
         self._turn_index = 0
 
-    def turn(self, user_input=None, timeout_seconds=30.0):
+    def turn(self, user_input=None, timeout_seconds=30.0, process_only=False):
         # execute one full turn with curiosity tracking
         #
         # user_input: the users message, or none for autonomous exploration
         # timeout_seconds: reserved for future async stuff, currently unused
+        # process_only: if true, call ws.process() instead of ws.generate()
+        #               (no SLM call). used for corpus-driven priming where
+        #               we want the forward model and threshold to track state
+        #               but don't need language output.
         #
         # returns a TurnResult
         agent_initiated = False
         question_used = None
+        has_questions = False
 
-        # encode current state
+        # encode current state (this z_t is the reference point for ALL
+        # curiosity measurement in this turn — R4)
         z_t = self._encode_current()
 
         # figure out what input to use
         if user_input is not None:
             effective_input = user_input
         else:
-            # no user input, check exploration gate
-            last_epistemic = self._last_epistemic()
-            if self._threshold.should_explore(last_epistemic):
-                result = self._question_gen.generate(
-                    z_t, self._ws.context_string(), self._ws,
+            # no user input — autonomous exploration
+            self._autonomous_count += 1
+
+            # R5: check if this is a probe turn
+            probe_response = None
+            if (self._probe_questions and
+                    self._autonomous_count % self._probe_interval == 0):
+                probe_idx = (
+                    (self._autonomous_count // self._probe_interval) - 1
+                ) % len(self._probe_questions)
+                probe_q = self._probe_questions[probe_idx]
+                probe_response = self._ws.generate(probe_q)
+                # don't mutate state further — probe is observation only
+
+            # recall a memory using a random top concept as query
+            concepts = self._ws.graph.top_concepts(10)
+            if concepts:
+                query_concept = concepts[
+                    self._turn_index % len(concepts)
+                ]
+            else:
+                query_concept = "uncertainty"
+
+            memories = self._ws.memory.recall(query_concept, n=1)
+            if memories:
+                recall_text = memories[0]["text"]
+            else:
+                recall_text = query_concept
+
+            # process the recalled memory (no SLM, just workspace update)
+            self._ws.process(recall_text)
+
+            # R4: gate decision uses predict() only — no training, no
+            # curiosity.step(). the forward model should not train on the
+            # recall transition separately. training happens once in the
+            # main block below, on the full turn transition.
+            recall_emb = self._ws.embedder.embed(recall_text)
+            a_recall = self._action_proj.project(recall_emb)
+            z_post_recall = self._encode_current()
+            _, gate_epistemic = self._curiosity._model.predict(
+                z_t, a_recall,
+            )
+            # update threshold with the gate reading (but don't train)
+            self._threshold.update(gate_epistemic)
+
+            # evaluate gate
+            if self._threshold.should_explore(gate_epistemic):
+                # R2: generate free-form exploration via SLM
+                result = self._exploration_gen.generate(
+                    self._ws.context_string(),
                 )
                 if result is not None:
-                    question_used, _ = result
+                    question_used, has_questions = result
                     effective_input = question_used
                     agent_initiated = True
                 else:
-                    # slm failed to produce candidates, use a generic probe
-                    effective_input = "What am I uncertain about right now?"
-                    question_used = effective_input
-                    agent_initiated = True
+                    # R3: generation failed — treat as idle turn
+                    # R4: still need one curiosity.step() for the recall
+                    # transition so the forward model learns from it
+                    curiosity_state = self._curiosity.step(
+                        z_t, a_recall, z_post_recall,
+                    )
+                    self._last_z = z_post_recall
+                    self._log_turn(
+                        turn_index=self._turn_index,
+                        agent_initiated=False,
+                        question_used=None,
+                        input_text=f"[recall:{query_concept}] {recall_text[:80]} [gen_failed]",
+                        curiosity_state=curiosity_state,
+                        domain=getattr(self, '_current_domain', None),
+                    )
+                    self._turn_index += 1
+                    return TurnResult(
+                        response="",
+                        curiosity_state=curiosity_state,
+                        agent_initiated=False,
+                        question_used=None,
+                        probe_response=probe_response,
+                    )
+                # fall through to the main processing block below
             else:
-                # gate closed and no user input, nothing to do
-                idle_state = CuriosityState(
-                    epistemic=0.0, error=0.0, progress=0.0,
+                # gate closed — train on the recall transition (R4: single
+                # curiosity.step for idle turns)
+                curiosity_state = self._curiosity.step(
+                    z_t, a_recall, z_post_recall,
                 )
-                return TurnResult(
-                    response="",
-                    curiosity_state=idle_state,
+                self._last_z = z_post_recall
+                self._log_turn(
+                    turn_index=self._turn_index,
                     agent_initiated=False,
                     question_used=None,
+                    input_text=f"[recall:{query_concept}] {recall_text[:80]}",
+                    curiosity_state=curiosity_state,
+                    domain=getattr(self, '_current_domain', None),
+                    probe_response=probe_response,
+                )
+                self._turn_index += 1
+                return TurnResult(
+                    response="",
+                    curiosity_state=curiosity_state,
+                    agent_initiated=False,
+                    question_used=None,
+                    probe_response=probe_response,
                 )
 
         # run the cognitive loop
-        response = self._ws.generate(effective_input)
+        if process_only:
+            # corpus-driven priming: process only, no SLM
+            context = self._ws.process(effective_input)
+            response = ""
+        else:
+            response = self._ws.generate(effective_input)
 
-        # encode action (embed response then project to action space)
-        response_emb = self._ws.embedder.embed(response)
-        a_t = self._action_proj.project(response_emb)
+        # R1: close the learning loop — feed the SLM's response back
+        # through the workspace so the "answer" shapes understanding.
+        response_integrated = False
+        if agent_initiated and response and not process_only:
+            self._ws.process(response)
+            response_integrated = True
 
-        # encode post-turn state
+        # encode action and project to action space
+        if process_only:
+            input_emb = self._ws.embedder.embed(effective_input)
+            a_t = self._action_proj.project(input_emb)
+        else:
+            response_emb = self._ws.embedder.embed(response)
+            a_t = self._action_proj.project(response_emb)
+
+        # encode post-turn state (captures state AFTER response integration)
         z_t1 = self._encode_current()
 
-        # curiosity step
+        # R4: single curiosity.step() per turn — measures the full transition
+        # from pre-recall/pre-input z_t to post-response z_t1, and trains
+        # the forward model exactly once on this transition.
         curiosity_state = self._curiosity.step(z_t, a_t, z_t1)
 
         # update threshold
@@ -273,13 +374,21 @@ class WorkspaceIntegration:
         # save z for next turn
         self._last_z = z_t1
 
+        # R5: attach probe response if this was a probe turn
+        probe_response = locals().get('probe_response', None)
+
         # log it
+        _has_q = has_questions if agent_initiated else False
         self._log_turn(
             turn_index=self._turn_index,
             agent_initiated=agent_initiated,
             question_used=question_used,
             input_text=effective_input,
             curiosity_state=curiosity_state,
+            domain=getattr(self, '_current_domain', None),
+            has_questions=_has_q,
+            response_integrated=response_integrated,
+            probe_response=probe_response,
         )
         self._turn_index += 1
 
@@ -288,6 +397,9 @@ class WorkspaceIntegration:
             curiosity_state=curiosity_state,
             agent_initiated=agent_initiated,
             question_used=question_used,
+            has_questions=_has_q,
+            response_integrated=response_integrated,
+            probe_response=probe_response,
         )
 
     # internal helpers
@@ -310,22 +422,31 @@ class WorkspaceIntegration:
         return float("inf")
 
     def _log_turn(self, turn_index, agent_initiated, question_used,
-                  input_text, curiosity_state):
+                  input_text, curiosity_state, domain=None,
+                  has_questions=False, response_integrated=False,
+                  probe_response=None):
         # append one json object to the jsonl log
         record = {
-            "turn": turn_index,
+            "turn_index": turn_index,
             "timestamp": time.time(),
-            "agent_initiated": agent_initiated,
+            "autonomous_question_fired": agent_initiated,
             "question_used": question_used,
             "input": input_text,
-            "curiosity": {
-                "epistemic": curiosity_state.epistemic,
-                "error": curiosity_state.error,
-                "progress": curiosity_state.progress,
-            },
+            "epistemic_uncertainty": curiosity_state.epistemic,
+            "prediction_error": curiosity_state.error,
+            "progress_signal": curiosity_state.progress,
+            "top_5_concepts": self._ws.graph.top_concepts(5),
+            "arousal": self._ws.affect.arousal(),
+            "valence": self._ws.affect.valence(),
             "workspace_turn": self._ws.turn,
             "threshold": self._threshold.threshold,
+            "has_questions": has_questions,
+            "response_integrated": response_integrated,
         }
+        if domain is not None:
+            record["domain"] = domain
+        if probe_response is not None:
+            record["probe_response"] = probe_response  # R5
         with open(self._log_path, "a") as f:
             f.write(json.dumps(record) + "\n")
 
@@ -345,11 +466,12 @@ if __name__ == "__main__":
 
     print("=" * 65)
     print("WorkspaceIntegration dry-run test (mocked SLM + StateEncoder)")
+    print("R1: learning loop closure, R2: emergent exploration, R3: no fallback")
     print("=" * 65)
 
     # mock the slm (ollama.chat)
-    # return a fixed response for generate() and a numbered list for
-    # question generator candidate calls
+    # return a fixed response for generate() and free-form exploration
+    # for ExplorationGenerator calls
     _call_count = 0
 
     def mock_ollama_chat(model, messages, **kwargs):
@@ -358,14 +480,14 @@ if __name__ == "__main__":
 
         content = messages[-1]["content"]
 
-        # detect candidate generation prompt
-        if "List exactly 5" in content:
+        # detect exploration prompt (R2: open-ended, no "list 5 questions")
+        if "Follow whatever feels most unresolved" in content:
             return {"message": {"content": (
-                "1. What patterns connect rhythm and computation?\n"
-                "2. How does memory decay shape what I attend to?\n"
-                "3. Is there a structure to the silence between concepts?\n"
-                "4. What does it mean for an abstraction to leak?\n"
-                "5. Why do some ideas feel inevitable in retrospect?\n"
+                "The relationship between memory and attention keeps surfacing. "
+                "When a system retrieves something from storage, it changes what "
+                "it attends to next — but does the act of attending also reshape "
+                "what gets stored? There's a circularity here that feels unresolved. "
+                "What would it mean for retrieval itself to be a form of learning?"
             )}}
 
         # normal generation, short response
@@ -386,8 +508,7 @@ if __name__ == "__main__":
         curiosity = CuriositySignal(forward_model, window_k=10)
         threshold = AdaptiveThreshold(window_size=20, percentile=85.0)
         action_proj = ActionProjection()
-        question_gen = QuestionGenerator(
-            forward_model, embedder, action_proj,
+        exploration_gen = ExplorationGenerator(
             model_name=config.OLLAMA_MODEL,
         )
 
@@ -401,7 +522,7 @@ if __name__ == "__main__":
             state_encoder=encoder,
             curiosity=curiosity,
             threshold=threshold,
-            question_gen=question_gen,
+            exploration_gen=exploration_gen,
             action_proj=action_proj,
             log_path=log_path,
         )
@@ -432,12 +553,15 @@ if __name__ == "__main__":
                 tag = "AGENT"
 
             results.append(result)
+            extra = ""
+            if result.agent_initiated:
+                extra = f"  has_q={result.has_questions}  R1={result.response_integrated}"
             print(
                 f"  turn {i:2d} [{tag:5s}]  "
                 f"epistemic={result.curiosity_state.epistemic:.6f}  "
                 f"error={result.curiosity_state.error:.4f}  "
                 f"progress={result.curiosity_state.progress:+.4f}  "
-                f"initiated={result.agent_initiated}"
+                f"initiated={result.agent_initiated}{extra}"
             )
 
         # validate results
@@ -453,22 +577,43 @@ if __name__ == "__main__":
             "First 7 turns should be user-initiated"
         assert all(r.question_used is None for r in user_turns), \
             "User turns should have question_used=None"
-        print(f"  ok  Turns 0-6: user-initiated, no question_used")
+        assert all(not r.has_questions for r in user_turns), \
+            "User turns should have has_questions=False"
+        assert all(not r.response_integrated for r in user_turns), \
+            "User turns should have response_integrated=False"
+        print(f"  ok  Turns 0-6: user-initiated, no question_used, no R1")
 
-        # 3. agent initiated turns
-        agent_turns = [r for r in results[7:]]
-        assert all(r.agent_initiated for r in agent_turns), \
-            "Last 3 turns should be agent-initiated"
-        assert all(r.question_used is not None for r in agent_turns), \
-            "Agent turns should have question_used set"
-        print(f"  ok  Turns 7-9: agent-initiated, question_used set")
-        for i, r in enumerate(agent_turns, 7):
-            print(f"       turn {i} question: \"{r.question_used}\"")
+        # 3. agent initiated turns — R3 means some may NOT fire if gen fails
+        agent_turns = results[7:]
+        fired = [r for r in agent_turns if r.agent_initiated]
+        idle = [r for r in agent_turns if not r.agent_initiated]
+        print(f"  info  Agent turns: {len(fired)} fired, {len(idle)} idle")
 
-        # 4. all responses are non empty strings
-        assert all(isinstance(r.response, str) and len(r.response) > 0
-                    for r in results), "All responses should be non-empty strings"
-        print(f"  ok  All responses are non-empty strings")
+        # R1: all fired turns should have response_integrated=True
+        for r in fired:
+            assert r.response_integrated, \
+                "Fired agent turns should have response_integrated=True (R1)"
+            assert r.question_used is not None, \
+                "Fired agent turns should have question_used set"
+        if fired:
+            print(f"  ok  All fired turns have response_integrated=True (R1)")
+
+        # R3: idle agent turns should NOT have question_used set
+        for r in idle:
+            assert r.question_used is None, \
+                "Idle agent turns should have question_used=None (R3)"
+        if idle:
+            print(f"  ok  Idle agent turns have question_used=None (R3)")
+
+        # print fired exploration text
+        for i, r in enumerate(fired):
+            print(f"       exploration [{i}]: \"{r.question_used[:80]}...\"")
+            print(f"       has_questions={r.has_questions}")
+
+        # 4. all responses are strings (may be empty for idle turns)
+        assert all(isinstance(r.response, str) for r in results), \
+            "All responses should be strings"
+        print(f"  ok  All responses are strings")
 
         # 5. curiosity state fields are all floats
         for r in results:
@@ -489,10 +634,12 @@ if __name__ == "__main__":
         print(f"  ok  10 log lines written")
 
         required_keys = {
-            "turn", "timestamp", "agent_initiated", "question_used",
-            "input", "curiosity", "workspace_turn", "threshold",
+            "turn_index", "timestamp", "autonomous_question_fired",
+            "question_used", "input", "epistemic_uncertainty",
+            "prediction_error", "progress_signal", "top_5_concepts",
+            "arousal", "valence", "workspace_turn", "threshold",
+            "has_questions", "response_integrated",
         }
-        curiosity_keys = {"epistemic", "error", "progress"}
 
         for i, line in enumerate(lines):
             record = json.loads(line)
@@ -501,46 +648,34 @@ if __name__ == "__main__":
             missing = required_keys - set(record.keys())
             assert not missing, f"Line {i}: missing keys {missing}"
 
-            # check curiosity sub object
-            c = record["curiosity"]
-            c_missing = curiosity_keys - set(c.keys())
-            assert not c_missing, f"Line {i}: curiosity missing {c_missing}"
-
             # check types
-            assert isinstance(record["turn"], int)
+            assert isinstance(record["turn_index"], int)
             assert isinstance(record["timestamp"], float)
-            assert isinstance(record["agent_initiated"], bool)
-            assert isinstance(record["curiosity"]["epistemic"], float)
-            assert isinstance(record["curiosity"]["error"], float)
-            assert isinstance(record["curiosity"]["progress"], float)
+            assert isinstance(record["autonomous_question_fired"], bool)
+            assert isinstance(record["epistemic_uncertainty"], float)
+            assert isinstance(record["prediction_error"], float)
+            assert isinstance(record["progress_signal"], float)
+            assert isinstance(record["top_5_concepts"], list)
+            assert isinstance(record["has_questions"], bool)
+            assert isinstance(record["response_integrated"], bool)
 
-        print(f"  ok  All log records have correct schema and types")
+        print(f"  ok  All log records have correct schema and types (incl R1/R2 fields)")
 
-        # verify agent_initiated flags in log match results
+        # R1 validation: response_integrated should be True for fired turns
         for i, line in enumerate(lines):
             record = json.loads(line)
-            expected = i >= 7
-            assert record["agent_initiated"] == expected, (
-                f"Line {i}: expected agent_initiated={expected}, "
-                f"got {record['agent_initiated']}"
-            )
-        print(f"  ok  agent_initiated flags correct in log")
+            if record["autonomous_question_fired"]:
+                assert record["response_integrated"], \
+                    f"Line {i}: fired turn should have response_integrated=True"
+        print(f"  ok  response_integrated=True for all fired turns in log (R1)")
 
-        # verify question_used in log
+        # print a sample log record from an agent turn
         for i, line in enumerate(lines):
             record = json.loads(line)
-            if i < 7:
-                assert record["question_used"] is None, \
-                    f"Line {i}: user turn should have question_used=None"
-            else:
-                assert record["question_used"] is not None, \
-                    f"Line {i}: agent turn should have question_used set"
-        print(f"  ok  question_used fields correct in log")
-
-        # print a sample log record
-        sample = json.loads(lines[8])
-        print(f"\n  Sample log record (turn 8, agent-initiated):")
-        print(f"    {json.dumps(sample, indent=4)}")
+            if record["autonomous_question_fired"]:
+                print(f"\n  Sample log record (turn {i}, agent-initiated):")
+                print(f"    {json.dumps(record, indent=4)}")
+                break
 
         # clean up
         log_path.unlink()

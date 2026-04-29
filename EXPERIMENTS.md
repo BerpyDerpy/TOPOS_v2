@@ -147,53 +147,141 @@ Final ensemble weight norms: `[16.05, 23.99, 29.39, 43.36, 57.66]`, std=14.77
 
 **Remaining concern:** The epistemic spike at the transition is clear but not instantaneous. The peak occurs at turns 505–509 (epistemic 0.0024–0.0027), not at turn 501 (0.0016). There is a ~5-turn delay before the ensemble fully registers the domain change. This is the EMA state update: `state = 0.6×state + 0.4×embedding`, so the workspace state vector takes several turns to decorrelate from the music domain. The exploration gate will lag the actual domain boundary by approximately `1/(1−α)` = 2.5 turns. Acceptable for a K=10 window, but worth noting.
 
+### Architectural Update: Concept Graph Entropy Decay
+
+**Finding:** Following Experiment 7, a diagnostic analysis revealed that the concept graph was entering an attractor lock-in state over long-horizon exposures. 
+
+- **Symptom:** The concept graph's entropy standard deviation flatlined to 0.0000, and the top-5 concept set became statically locked (mean Jaccard similarity ≈ 0.96).
+- **Cause:** Sustained exposure to a domain caused the Exponential Moving Average (EMA) and additive surprise updates to smooth out the weights toward equality over time. Early high-weight nodes became entrenched and could not be displaced by recent salience.
+- **Fix:** Recalibrated `GRAPH_DECAY` from 0.99 to 0.95. The previous 0.99 value was too gentle (halving life of ~69 turns); 0.95 applies a more aggressive multiplicative decay per turn (halving life of ~14 turns), ensuring recent salience dominates over unbounded historical accumulation.
+- **Validation:** A 30-turn synthetic test confirmed the discrimination was restored. Concept graph entropy std: 0.0000 → 0.0116 after decay recalibration. The top-5 Jaccard similarity dropped to 0.6921 (< 0.9 threshold), confirming the concepts are dynamically shifting. A subsequent 250-turn test (matching Experiment 6 priming length) confirmed that the aggressive 0.95 decay alone is sufficient to prevent saturation over long horizons (Jaccard = 0.7869 < 0.9). A hard `MAX_NODE_WEIGHT` ceiling was explored but reverted, as it added a tunable parameter with no validated effect.
+
 ---
 
 ## Experiment 6: Autonomous Curiosity Integration
 
-**Date:** 2026-04-18  -  pre-registered, blocked on Experiment 5
+**Date:** 2026-04-18 — pre-registered, updated 2026-04-29. Blocked on Experiment 5 → unblocked by Experiment 7. Concept graph decay recalibrated (0.99→0.95) before run.
 
 ### Hypothesis
 
-With `WorkspaceIntegration` wired into the cognitive loop and the `--autonomous` flag enabled, the agent will generate autonomous questions at domain transition points  -  specifically, the first autonomous question should appear near the music-to-systems or systems-to-music boundary where epistemic uncertainty peaks.
+H1: Gate fires on ≥3 and ≤15 of the 20 autonomous turns. Gate-triggered turns have epistemic ratio ≥1.3× over non-triggered turns.
 
-The system should NOT generate questions mid-batch when the forward model has already learned the current domain's dynamics.
+H2: In ≥2 gate-triggered turns, top_5_concepts contains nodes from both domain corpora (at least one music-origin and one systems-origin concept co-occurring).
+
+### Known Ungrounded Assumptions
+
+A1: Forward model generalises from corpus-driven to SLM-driven state dynamics. If it doesn't, all 20 autonomous turns show high epistemic — modality mismatch, not curiosity.
+
+A3 (highest risk): Echo chamber — SLM reinforces existing workspace concepts → workspace tightens context string → SLM reinforces further → epistemic collapses after first few turns.
 
 ### Setup
 
-- Same 50-turn priming protocol as Run 3 (25 music + 25 systems, interleaved batches of 5)
-- After priming, 20 additional turns with autonomous questioning enabled
-- Forward model trained online during priming (bagged updates, keep_prob=0.6)
-- Exploration gate: AdaptiveThreshold at 85th percentile of recent epistemic
-- Question generation: SLM produces 5 candidates, scored by epistemic uncertainty
-- JSONL logging of all turns
+- **Model:** Qwen2.5-7B (base), via Ollama. SLM active only during autonomous phase.
+- **Phase 1:** 250 turns music corpus (sequential, process-only, no SLM). Corpus: `corpus/music_500.jsonl` (first 250 entries).
+- **Phase 2:** 250 turns systems corpus (sequential, process-only, no SLM). Corpus: `corpus/systems_500.jsonl` (first 250 entries).
+- **Phase 3:** 20 autonomous turns (SLM active, `integration.turn(user_input=None)`). Gate evaluation active.
+- **Forward model:** 5-member ensemble, lr=1e-3, online measure-then-update per turn, bagging keep_prob=0.6.
+- **Init diversity:** Weight scaling [0.5, 0.8, 1.0, 1.5, 2.0] per member.
+- **Exploration gate:** AdaptiveThreshold at 85th percentile, window=50.
+- **All 520 turns** logged to `runs/experiment_6_<timestamp>.jsonl`.
+- **Protocol change from original pre-registration:** Was 50-turn interleaved (25+25 in batches of 5). Now 250+250 sequential from corpus, matching Experiment 7's validated signal properties.
+- **Command:** `python main.py --experiment-6`
+
+#### Architectural Changes Applied Before Run (R1–R6)
+
+Six architectural fixes from a systematic audit were applied before the run:
+
+| ID | Change | Severity | File |
+|---|---|---|---|
+| **R1** | **Learning loop closure.** SLM response fed back through `ws.process()` on agent-initiated turns. The answer now shapes workspace state (memory, concepts, affect). | Critical | `integration.py` |
+| **R2** | **Emergent exploration.** Replaced `QuestionGenerator` ("list 5 questions") with `ExplorationGenerator` — open-ended prompt with no instruction to produce questions. Whether the SLM asks questions is now an *observation*, not a *command*. `has_questions` logged per turn. | Critical | `integration.py` |
+| **R3** | **No hardcoded fallback.** When exploration generation fails, turn is logged as idle (`agent_initiated=False`). Previously, a hardcoded "What am I uncertain about right now?" was injected and logged as genuine. | High | `integration.py` |
+| **R4** | **Single curiosity measurement per turn.** Gate decision uses `predict()` (no training). Forward model trains exactly once per turn on the full transition. Previously, gate-fired turns trained twice on different transitions. | High | `integration.py` |
+| **R5** | **Periodic probe questions.** Every 5 autonomous turns, a fixed probe question is injected (observation-only, no state mutation). Probes: "What do you think about silence?", "Is there a rhythm to how computers think?", "What do you find yourself returning to?" | Medium | `integration.py`, `main.py` |
+| **R6** | **Continuous affect.** Context string passes raw `Arousal: 0.74  Valence: -0.32` instead of bucketed mood strings ("watchful and still", etc.). Removes author's prescriptive literary choices from personality channel. | Medium | `workspace.py` |
 
 ### Config Snapshot
 
 ```python
 OLLAMA_MODEL      = "qwen2.5:7b"
+EMBED_MODEL       = "all-MiniLM-L6-v2"
+WORKSPACE_DIM     = 384
+AFFECT_DIM        = 64
 WORKSPACE_ALPHA   = 0.4
 AFFECT_ALPHA      = 0.3
 AFFECT_DECAY      = 0.95
 SENTIMENT_SCALE   = 8.0
-MAX_GRAPH_NODES   = 100
-# Curiosity mechanism:
+MAX_GRAPH_NODES   = 200
+GRAPH_DECAY       = 0.95      # was 0.99, recalibrated to prevent attractor lock-in
+NER_BOOST_THRESHOLD = 1.5
+MEMORY_RECALL_N   = 2
+TOP_CONCEPTS_N    = 5
+PROGRESS_WINDOW_LIVE = 10
+# Ensemble:
 # ensemble_members = 5
 # ensemble_lr      = 1e-3
 # bagging_keep     = 0.6
 # init_scales      = [0.5, 0.8, 1.0, 1.5, 2.0]
 # threshold_window = 50
 # threshold_pct    = 85.0
-# progress_window  = 10
 ```
+
+### Pass/Fail Criteria
+
+See `experiment_6_criteria.md` for full three-tier criteria with JSONL signatures.
 
 ### Result
 
-*Blocked on Experiment 5 interpretation review — now resolved. Experiment 7 validated the epistemic signal at 2.41× transition ratio. This experiment is unblocked.*
+**Date run:** 2026-04-29. Log: `runs/experiment_6_20260429_*.jsonl`
+
+| Hypothesis | Result | Detail |
+|---|---|---|
+| H1. Gate fires 3–15 of 20, ratio ≥1.3× | **FAIL** | Gate fired 4/20 (in range), but epistemic ratio = 0.73× (inverted — fired turns were *less* uncertain than idle turns). All 4 fires were cold-start artifacts from threshold reset. |
+| H2. ≥2 turns with cross-domain concepts | **FAIL** | Zero music-origin concepts in any autonomous turn's top-5. All 4 fired turns were purely systems-domain. Music priming left no trace. |
+
+**Autonomous phase summary:**
+```
+Gate fired:     4 / 20 (turns 501–504 only, then gate closed permanently)
+Fired epistemic mean:  0.001480
+Idle epistemic mean:   0.002020
+Epistemic ratio:       0.73× (inverted)
+Final top 10:          thread, space, critical, time, cas, section, critical section, state, environment, memory
+Affect:                arousal=1.0000 (saturated), valence=-0.0543 (neutral)
+```
+
+**Probe responses (R5):**
+| Turn | Probe | Response character |
+|---|---|---|
+| 505 | "What do you think about silence?" | Systems-framed (non-blocking, wait states). No music vocabulary. |
+| 510 | "Is there a rhythm to how computers think?" | Generic response about computer patterns. No cross-domain synthesis. |
+| 515 | "What do you find yourself returning to?" | "Critical sections" and "threads in a fabric." Direct regurgitation of concept graph top nodes. |
+| 520 | "What do you think about silence?" | Same framing as turn 505. No behavioral change across 15 turns. |
 
 ### Interpretation
 
-*Pending result.*
+#### The Central Finding: Curiosity Was the Prompt, Not the Architecture
+
+R2 delivered the most important result in the project: **when the instruction to produce questions is removed, the SLM does not produce questions.** All four gate-fired exploration outputs are declarative analytical paragraphs — not a single `?` in any of them. The SLM narrated its state rather than exploring gaps.
+
+This means the old `QuestionGenerator` was measuring SLM prompt compliance, not genuine curiosity. The epistemic gate (ensemble disagreement) is a real signal for detecting novel transitions, but the *behavior* it triggered was hardcoded by the prompt format. With R2, we can now see clearly: the workspace state does not encode "uncertainty" in a form that the SLM recognizes as a prompt for inquiry.
+
+#### Secondary Findings
+
+1. **Cold-start dominance.** All gate fires were artifacts of `threshold.reset()` at the start of the autonomous phase. Epistemic ratio is inverted (0.73×), meaning the gate fired on the *least* uncertain turns. After threshold calibration (~turn 505), the gate never opened again.
+
+2. **Echo chamber confirmed (A3).** R1 (learning loop closure) fed the SLM's systems-heavy responses back through `ws.process()`, which reinforced systems concepts in the graph, which tightened the context string, which produced more systems output. The loop closure accelerated attractor convergence rather than enabling learning.
+
+3. **Affect saturated.** Arousal=1.0 (pegged at ceiling for all 520 turns). Valence≈0 (neutral). R6's continuous values are honest but uninformative — the affect module's EMA decay (0.95) is too slow for 500-turn priming; it saturates and never recovers. The SLM sees `Arousal: 1.00  Valence: -0.05` every turn.
+
+4. **Probe stasis.** R5 probes show no behavioral change across the autonomous phase. All responses are systems-framed with identical character. The workspace conditioning is monotone — it amplifies the dominant attractor without introducing novelty.
+
+#### The Mind vs. Mouth Problem
+
+This experiment exposes a fundamental measurement problem: **we are evaluating the mind by observing the mouth, but the mouth has its own biases.** The SLM's training data biases, response conventions, and pattern completion habits are confounded with workspace state influence. When the SLM produces systems-heavy analytical prose, we cannot distinguish between "the workspace state genuinely encodes systems knowledge" and "the base model defaults to analytical prose given technical keywords."
+
+The workspace modules (concept graph, affect, episodic memory) constitute the "mind" — they genuinely evolve with input. But the SLM is the "mouth" — it translates mind-state to language, and that translation is lossy and biased. The mouth can disobey the mind and we would never know.
+
+**Implication for future work:** The correct measurement target is the workspace state itself, not the SLM output. Graph topology, affect trajectory, epistemic uncertainty curves — these are the mind's direct properties. SLM output is an unreliable proxy. A direct visualization of workspace evolution would be a more honest measurement than any amount of generated text analysis.
 
 ---
 
