@@ -368,6 +368,10 @@ class WorkspaceIntegration:
         # the forward model exactly once on this transition.
         curiosity_state = self._curiosity.step(z_t, a_t, z_t1)
 
+        # R7: push epistemic state back to the workspace for the next turn's context string
+        self._ws._epistemic_uncertainty = curiosity_state.epistemic
+        self._ws._prediction_error = curiosity_state.error
+
         # update threshold
         self._threshold.update(curiosity_state.epistemic)
 

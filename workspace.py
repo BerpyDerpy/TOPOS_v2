@@ -88,6 +88,10 @@ class GlobalWorkspace:
         self._last_surprise = 0.0
         # cache last input for memory recall
         self._last_input = ""
+        # epistemic context from the forward model (set by integration layer)
+        # these are None until the first curiosity measurement
+        self._epistemic_uncertainty = None
+        self._prediction_error = None
 
     def process(self, user_input):
         # runs one full cognitive turn, returns the context string
@@ -178,12 +182,25 @@ class GlobalWorkspace:
         v = self.affect.valence()
         a = self.affect.arousal()
 
+        # epistemic context from forward model (if available)
+        # gives the SLM direct access to the mind's uncertainty signal
+        epistemic_line = ""
+        if self._epistemic_uncertainty is not None:
+            eu = self._epistemic_uncertainty
+            pe = self._prediction_error or 0.0
+            epistemic_line = (
+                f"\nYour internal model's uncertainty: {eu:.4f}  "
+                f"Prediction error: {pe:.2f}\n"
+                f"{'Your predictions about what comes next were wrong. Something here is unresolved.' if pe > 1.5 else 'Your predictions are tracking. This territory feels familiar.'}"
+            )
+
         return (
             "[Workspace state]\n"
             f"Arousal: {a:.2f}  Valence: {v:+.2f}\n"
             f"Surprise this turn: {self._last_surprise:.2f}\n"
             f"{concepts_line}\n"
             f"You keep returning to: {recall_lines}"
+            f"{epistemic_line}"
         )
 
     def generate(self, user_input):

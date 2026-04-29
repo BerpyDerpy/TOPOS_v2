@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOPOS — Live Mind Visualization</title>
+    <meta name="description" content="Real-time visualization of TOPOS workspace state: concept graph, affect, epistemic uncertainty, and curiosity-driven exploration.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header id="header">
+        <div class="header-left">
+            <h1>TOPOS</h1>
+            <span class="subtitle">Topology Oriented Persistent Observer System</span>
+        </div>
+        <div class="header-right">
+            <div class="status-pill" id="status-pill">
+                <span class="status-dot"></span>
+                <span id="status-text">Disconnected</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main id="main-grid">
+        <!-- LEFT: Concept Graph -->
+        <section class="panel graph-panel" id="graph-panel">
+            <div class="panel-header">
+                <h2>Concept Graph</h2>
+                <span class="panel-badge" id="node-count">0 nodes</span>
+            </div>
+            <div class="graph-container" id="graph-container">
+                <svg id="graph-svg"></svg>
+            </div>
+        </section>
+
+        <!-- RIGHT: Metrics & Feed -->
+        <aside class="metrics-column">
+            <!-- Affect -->
+            <section class="panel affect-panel">
+                <div class="panel-header"><h2>Affect State</h2></div>
+                <div class="gauge-row">
+                    <div class="gauge-label">Arousal</div>
+                    <div class="gauge-track">
+                        <div class="gauge-fill arousal-fill" id="arousal-fill"></div>
+                    </div>
+                    <div class="gauge-value" id="arousal-value">0.00</div>
+                </div>
+                <div class="gauge-row">
+                    <div class="gauge-label">Valence</div>
+                    <div class="gauge-track valence-track">
+                        <div class="gauge-center-line"></div>
+                        <div class="gauge-fill valence-fill" id="valence-fill"></div>
+                    </div>
+                    <div class="gauge-value" id="valence-value">+0.00</div>
+                </div>
+                <div class="gauge-row">
+                    <div class="gauge-label">Surprise</div>
+                    <div class="gauge-track">
+                        <div class="gauge-fill surprise-fill" id="surprise-fill"></div>
+                    </div>
+                    <div class="gauge-value" id="surprise-value">0.00</div>
+                </div>
+            </section>
+
+            <!-- Epistemic -->
+            <section class="panel epistemic-panel">
+                <div class="panel-header">
+                    <h2>Epistemic Uncertainty</h2>
+                    <span class="panel-badge" id="epistemic-badge">0.000000</span>
+                </div>
+                <canvas id="epistemic-canvas" width="400" height="120"></canvas>
+            </section>
+
+            <!-- Turn Feed -->
+            <section class="panel feed-panel">
+                <div class="panel-header">
+                    <h2>Turn Feed</h2>
+                    <span class="panel-badge" id="turn-badge">Turn 0</span>
+                </div>
+                <div class="feed-scroll" id="feed-scroll"></div>
+            </section>
+        </aside>
+    </main>
+
+    <!-- Progress Bar -->
+    <footer id="footer">
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="footer-info">
+            <span id="progress-label">Ready</span>
+            <div class="speed-control">
+                <label for="speed-slider">Speed</label>
+                <input type="range" id="speed-slider" min="50" max="2000" value="300" step="50">
+                <span id="speed-value">300ms</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Gate Fire Overlay -->
+    <div class="gate-overlay" id="gate-overlay">
+        <div class="gate-modal">
+            <div class="gate-header">
+                <div class="gate-icon">⚡</div>
+                <h2>The System is Uncertain</h2>
+                <div class="gate-epistemic">
+                    Epistemic: <span id="gate-epistemic-val">0.0000</span>
+                </div>
+            </div>
+            <div class="gate-body">
+                <div class="gate-section">
+                    <h3>Exploration</h3>
+                    <p id="gate-exploration-text"></p>
+                </div>
+                <div class="gate-section">
+                    <h3>System's Interpretation</h3>
+                    <p id="gate-response-text" class="gate-response"></p>
+                </div>
+            </div>
+            <div class="gate-input-section">
+                <label for="gate-answer">Your Answer Shapes Its Mind</label>
+                <div class="gate-input-row">
+                    <input type="text" id="gate-answer" placeholder="Type your answer..."
+                           autocomplete="off" spellcheck="false">
+                    <button id="gate-submit">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Overlay -->
+    <div class="start-overlay" id="start-overlay">
+        <div class="start-modal">
+            <h1>TOPOS</h1>
+            <p class="start-subtitle">Topology Oriented Persistent Observer System</p>
+            <p class="start-desc">
+                Watch a mind form in real-time. The system will be fed data about
+                <strong>music</strong> and <strong>computer systems</strong>.
+                Its concept graph, affect, and epistemic state will evolve before your eyes.
+                When it's uncertain, it will ask — and your answer shapes its understanding.
+            </p>
+            <div class="start-config">
+                <div class="config-row">
+                    <label>Priming turns per domain</label>
+                    <input type="number" id="cfg-priming" value="15" min="5" max="100">
+                </div>
+                <div class="config-row">
+                    <label>Autonomous turns</label>
+                    <input type="number" id="cfg-autonomous" value="20" min="5" max="100">
+                </div>
+                <div class="config-row">
+                    <label>Speed (ms/turn)</label>
+                    <input type="number" id="cfg-speed" value="300" min="50" max="2000" step="50">
+                </div>
+            </div>
+            <button id="start-btn" class="start-button">Begin</button>
+        </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
