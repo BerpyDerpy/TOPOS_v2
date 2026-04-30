@@ -1,75 +1,110 @@
-# ROADMAP.md  -  TOPOS Planning Surface
+# ROADMAP.md - TOPOS Planning Surface
 
-Living document. Rewrite freely. This is where priorities live, not an archive.
+Living document. Rewrite freely.
 
-*Last updated: 2026-04-14*
-
----
-
-## Current Focus
-
-**P-Tuning v2 workspace injection on Qwen3-8B.**
-
-Goal: Replace the natural-language context string with learned continuous prompts at all KV layers. This is the prescribed fix for the closing-convention bleed (AGENTS.md §4.7, weakness #2). See EXPERIMENTS.md §Experiment 4 for the pre-registered protocol.
-
-Key tasks:
-1. Switch OLLAMA_MODEL to `qwen3:8b` (Q8)
-2. Implement projection layer: R^384 → R^(d_model × k), k = 8 soft prompt tokens
-3. Generate training pairs from Run 3 workspace states + curated target responses
-4. Train projection, evaluate on same 50-turn longitudinal protocol
-5. Primary signal: Q3 ending maintains workspace register
+*Last updated: 2026-04-29*
 
 ---
 
-## Next 2–3 Experiments (Priority Order)
+## Current State
 
-### 1. Perturbation Resistance (100+ turns)
+Experiment 6 completed. Both hypotheses failed. The core finding: the SLM is an unreliable measurement instrument for workspace state. Curiosity (if present) lives in the workspace. The mouth does not faithfully express the mind.
 
-50 turns of two-domain priming (same as Run 3), then introduce a third domain (e.g., biology, economics) at turn 50. Continue to turn 100+. Measure whether accumulated identity shifts gracefully, resists, or collapses.
+The workspace mechanic itself is validated: epistemic uncertainty spikes 2.41x at domain transitions (Exp 7), the concept graph evolves with content, affect accumulates. These are genuine internal state changes.
 
-**Depends on:** P-Tuning v2 results. No point testing identity persistence if the SLM still ignores workspace state at response boundaries.
-
-**Blocked by:** The `#TODO` in `main.py:9`  -  need a `--mega-longitudinal` mode or a generalised turn-count flag.
-
-### 2. Contradiction Handling
-
-Feed information that directly conflicts with high-weight concept graph nodes. Example: after priming on "lock-free structures are beautiful", introduce "lock-free structures are fundamentally broken in practice." Does the graph update incrementally, resist, or fragment?
-
-**Depends on:** Nothing external. Can run on current architecture. Lower priority because the result is harder to evaluate objectively.
-
-### 3. Dormant-Active Cycles
-
-Between sessions: decay low-weight nodes, prune weak edges, let affective vector settle toward zero baseline. Simulate "sleeping on it." Does the workspace consolidate or just lose signal?
-
-**Requires:** Serialisation of workspace state (graph, affect, memory). Currently in-memory only  -  this needs persistence first.
+The behavioral layer on top is where the problems are: autonomous concept selection is round-robin, affect has no effect on decisions, the exploration gate misfires on cold-start artifacts, and echo-chamber feedback accelerates attractor convergence.
 
 ---
 
-## Parked Ideas (Don't Lose These)
+## Priority 1: Direct Workspace Measurement
 
-### Cross-Attention Adapter
-Instead of P-Tuning v2's prefix injection, add cross-attention layers where the SLM attends to workspace state as a separate sequence. More expressive than prefix tokens. Significantly more complex to implement. Consider if P-Tuning v2 shows ceiling effects.
+Before running more SLM-dependent experiments, build the ability to observe the workspace state directly and continuously.
 
-### Introspection Module
-Give TOPOS read access to its own workspace state as a first-class reasoning object. Currently conditioned by state but cannot interrogate it (weakness #4). Would require the SLM to output structured queries against the graph/memory/affect, not just natural language.
+**What this means:**
+- Real-time visualisation of concept graph topology (node weights, edges, churn over time)
+- Affect trajectory plot (arousal + valence per turn)
+- Epistemic uncertainty curve overlaid with domain labels
+- Entropy of concept distribution per turn
 
-### Multi-Agent Workspace Sharing
-Workspace is a serialisable data structure. Multiple SLMs could read from a shared workspace. Interesting for ensemble reasoning but far from current priorities.
+The demo server (`demo_server.py`) is a starting point. Needs a live concept graph render that updates per turn, not just post-hoc.
 
-### Liquid Neural Networks for Non-Text Modalities
-If TOPOS extends to audio or sensor streams, an LNN front-end would handle irregular temporal inputs more gracefully than the current embedding approach. Not relevant while text-only.
+**Why now:** Every future experiment result will be ambiguous until we can observe the mind independently of the mouth.
 
-### Curiosity-Driven Self-Prompting
-The surprise signal currently only triggers deeper processing of incoming input. The next step: when surprise drops below a threshold for N consecutive turns, TOPOS generates its own prompt based on high-weight but under-explored graph regions. True autonomous curiosity, not just reactive depth modulation.
+---
+
+## Priority 2: Drive-Weighted Concept Selection
+
+Replace round-robin autonomous concept selection with curiosity-weighted selection.
+
+Current code (`integration.py`):
+```python
+query_concept = concepts[self._turn_index % len(concepts)]
+```
+
+Target: select the concept the forward model is most uncertain about. Requires embedding each top-k concept, computing predicted epistemic for each, and sampling from that distribution.
+
+This is the most direct path toward genuine self-direction during idle turns.
+
+---
+
+## Priority 3: Affect Integration into Decisions
+
+Arousal and valence are computed every turn but influence nothing. Two concrete connections to make:
+
+1. **Arousal-gated memory writes.** `SURPRISE_THRESHOLD=0.35` is already defined in config but unused. High-arousal turns should write to long-term memory; low-arousal turns should not. This reduces memory noise and gives the memory module behavioural meaning.
+2. **Valence-weighted concept selection.** During autonomous exploration, prefer concepts with positive valence associations (if the affect vector encodes that structure). Avoid concepts associated with negative valence saturation.
+
+---
+
+## Priority 4: Affect Reset Mechanism
+
+Arousal saturated at 1.0 for all 520 turns of Exp 6. The EMA decay of 0.95 is too slow for 500-turn priming. The SLM saw identical affect values every turn.
+
+Options:
+- Faster decay rate during corpus priming (separate config for priming vs. autonomous phases)
+- Hard reset of affect vector at phase boundaries
+- Dynamic decay rate proportional to variance of recent surprise values (low variance = boring, increase decay to allow affect to shift)
+
+---
+
+## Priority 5: P-Tuning v2 (Exp 4)
+
+Replace the natural-language context string with learned continuous prompts at all KV layers. Prescribed fix for base model closing-convention bleed.
+
+Blocked on: training data generation from Run 3 workspace states, Qwen3-8B setup.
+
+Depends on: Priority 1 (direct workspace measurement) to verify the projection is working.
+
+---
+
+## Priority 6: Perturbation Resistance
+
+50-turn two-domain priming, then introduce a third domain at turn 50. Continue to 100+. Does accumulated identity shift gracefully or collapse?
+
+Blocked on: P-Tuning v2 results. Not worth testing identity persistence if the SLM ignores workspace state at response endings.
+
+---
+
+## Parked (Don't Lose These)
+
+**Ensemble diversity maintenance.** Weight norms converge over long runs (Exp 7 H4). No mechanism restores diversity once lost. Options: periodic re-initialisation of weakest member, diversity regularisation loss term, periodically sample weight perturbations from the init distribution.
+
+**Cross-attention adapter.** Instead of P-Tuning v2's prefix injection, add cross-attention where the SLM attends to workspace state as a separate sequence. More expressive. Consider if P-Tuning v2 hits a ceiling.
+
+**Dormant-active cycles.** Between sessions: decay low-weight nodes, prune weak edges, let affect settle toward zero. Simulate consolidation. Requires workspace serialisation (graph + affect + memory persistence) which is not implemented.
+
+**Multi-agent workspace sharing.** Workspace is a serialisable data structure. Multiple SLMs could read from a shared workspace. Not a current priority.
+
+**Introspection module.** Give the system read access to its own workspace state as a first-class reasoning object. Would require the SLM to output structured queries against graph/memory/affect.
 
 ---
 
 ## Known Blockers
 
-| Blocker | Affects | Status |
-|---|---|---|
-| `spacy` missing from `requirements.txt` | Any fresh install | Fixed in this session |
-| `textblob` still in `requirements.txt` | Misleading dependency | Fixed in this session |
-| Dead `STOPWORDS` set in `workspace.py` | Code cleanliness | Low priority, harmless |
-| In-memory-only state (no persistence) | Dormant-active cycles, cross-session identity | Needs ChromaDB persistent + graph/affect serialisation |
-| No `--mega-longitudinal` mode | 100+ turn experiments | Needs `main.py` update |
+| Blocker | Affects |
+|---|---|
+| No workspace persistence (in-memory only) | Dormant-active cycles, cross-session identity |
+| Affect saturates on long runs (EMA too slow) | All experiments with 200+ priming turns |
+| Round-robin concept selection | Autonomous exploration quality |
+| Affect disconnected from decisions | Arousal-gated memory, valence-weighted exploration |
+| Init diversity decays silently | Long-run epistemic signal quality |
