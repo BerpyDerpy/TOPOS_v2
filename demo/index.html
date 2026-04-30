@@ -31,7 +31,10 @@
         <section class="panel graph-panel" id="graph-panel">
             <div class="panel-header">
                 <h2>Concept Graph</h2>
-                <span class="panel-badge" id="node-count">0 nodes</span>
+                <div class="graph-header-right">
+                    <span class="panel-badge" id="node-count">0 nodes</span>
+                    <button class="graph-reset-btn" id="graph-reset-zoom" title="Reset zoom">⊙</button>
+                </div>
             </div>
             <div class="graph-container" id="graph-container">
                 <svg id="graph-svg"></svg>

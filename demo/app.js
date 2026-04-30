@@ -42,7 +42,7 @@
     // ========== D3 GRAPH SETUP ==========
     const svg = d3.select("#graph-svg");
     let graphWidth = 0, graphHeight = 0;
-    let simulation, linkGroup, nodeGroup, labelGroup;
+    let simulation, linkGroup, nodeGroup, labelGroup, zoomLayer, zoomBehavior;
     let graphNodes = [], graphLinks = [];
     let nodeMap = new Map(); // id -> node data
 
@@ -61,9 +61,27 @@
         merge.append("feMergeNode").attr("in", "blur");
         merge.append("feMergeNode").attr("in", "SourceGraphic");
 
-        linkGroup = svg.append("g").attr("class", "links");
-        nodeGroup = svg.append("g").attr("class", "nodes");
-        labelGroup = svg.append("g").attr("class", "labels");
+        // single layer that zoom transforms
+        zoomLayer = svg.append("g").attr("class", "zoom-layer");
+        linkGroup = zoomLayer.append("g").attr("class", "links");
+        nodeGroup = zoomLayer.append("g").attr("class", "nodes");
+        labelGroup = zoomLayer.append("g").attr("class", "labels");
+
+        zoomBehavior = d3.zoom()
+            .scaleExtent([0.1, 8])
+            .on("zoom", (event) => {
+                zoomLayer.attr("transform", event.transform);
+            });
+
+        svg.call(zoomBehavior)
+            .on("dblclick.zoom", null); // disable dblclick-to-zoom; we keep scroll + drag
+
+        document.getElementById("graph-reset-zoom").addEventListener("click", () => {
+            svg.transition().duration(400).call(
+                zoomBehavior.transform,
+                d3.zoomIdentity
+            );
+        });
 
         simulation = d3.forceSimulation()
             .force("link", d3.forceLink().id(d => d.id).distance(80).strength(0.3))
@@ -210,7 +228,10 @@
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x; d.fy = d.y;
     }
-    function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+    function dragged(event, d) {
+        // event.x/y are already in zoom-layer space when drag is on a child of zoomLayer
+        d.fx = event.x; d.fy = event.y;
+    }
     function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0);
         d.fx = null; d.fy = null;
