@@ -475,8 +475,8 @@
 
     // ========== EVENTS ==========
     startBtn.addEventListener("click", () => {
-        const priming = parseInt($("#cfg-priming").value) || 15;
-        const autonomous = parseInt($("#cfg-autonomous").value) || 20;
+        const priming = parseInt($("#cfg-priming").value) || 50;
+        const autonomous = parseInt($("#cfg-autonomous").value) || 10;
         const speed = parseInt($("#cfg-speed").value) || 300;
 
         startOverlay.classList.add("hidden");

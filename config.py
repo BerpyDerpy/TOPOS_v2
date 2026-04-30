@@ -54,3 +54,4 @@ MEGA_LONGITUDINAL_BATCH_SIZE       = 50
 PROGRESS_WINDOW_LIVE               = 10
 CORPUS_MUSIC_PATH                  = "corpus/music_500.jsonl"
 CORPUS_SYSTEMS_PATH                = "corpus/systems_500.jsonl"
+CORPUS_EVERYDAY_PATH               = "corpus/everyday_100.jsonl"

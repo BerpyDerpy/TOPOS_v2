@@ -74,17 +74,15 @@ class ActionProjection(nn.Module):
 # exploration generator
 # =====================
 
-# R2: open-ended prompt — no instruction to produce questions.
-# the slm generates freely from workspace state. if it asks questions,
-# that's genuine curiosity. if it doesn't, the state doesn't encode
-# real uncertainty.  either outcome is informative.
+# R2: open-ended prompt — lets the SLM generate from full workspace state.
+# We constrain the *form* (one short question) but not the *content*.
+# Whether the question is genuine depends on what the workspace actually holds.
 _EXPLORATION_PROMPT = """\
-Below is your current internal state.
-
 {context_string}
 
-Continue from this state. Follow whatever feels most unresolved
-or incomplete. One to two paragraphs.
+Given your current internal state above, ask one short, simple question — \
+the thing that feels most unresolved right now. \
+Plain words. No explanation. Just the question.\
 """
 
 
@@ -405,6 +403,32 @@ class WorkspaceIntegration:
             response_integrated=response_integrated,
             probe_response=probe_response,
         )
+
+    def maybe_interject(self, min_calibration_turns=15):
+        # check the gate against the most recent epistemic reading.
+        # if it fires, generate an exploration question from current
+        # workspace state. does NOT mutate workspace, threshold, or
+        # forward model — purely an observation.
+        #
+        # min_calibration_turns: don't fire until threshold has seen
+        # at least this many readings (early turns are all novel,
+        # threshold isn't calibrated)
+        #
+        # returns (question_text, has_questions, epistemic) if the
+        # gate fires and generation succeeds, else None.
+        if len(self._threshold._values) < min_calibration_turns:
+            return None
+
+        last_epistemic = self._threshold._values[-1]
+        if not self._threshold.should_explore(last_epistemic):
+            return None
+
+        result = self._exploration_gen.generate(self._ws.context_string())
+        if result is None:
+            return None
+
+        question, has_questions = result
+        return question, has_questions, last_epistemic
 
     # internal helpers
 

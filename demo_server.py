@@ -136,22 +136,21 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_json({"type": "status", "text": "Loading corpus..."})
 
         # load corpus
-        music_loader = SingleFileCorpusLoader(config.CORPUS_MUSIC_PATH)
-        systems_loader = SingleFileCorpusLoader(config.CORPUS_SYSTEMS_PATH)
+        everyday_loader = SingleFileCorpusLoader(config.CORPUS_EVERYDAY_PATH)
 
         # ========== PHASE 1: PRIMING ==========
+        priming_turns = min(priming_per_domain, everyday_loader.total_turns)
         await websocket.send_json({
             "type": "status",
-            "text": f"Priming: {priming_per_domain} music + {priming_per_domain} systems turns",
+            "text": f"Priming: {priming_turns} turns",
         })
 
-        total_priming = priming_per_domain * 2
+        total_priming = priming_turns
         turn_idx = 0
 
-        # music priming
-        integration._current_domain = "music"
-        for i in range(min(priming_per_domain, music_loader.total_turns)):
-            text = music_loader.next()
+        integration._current_domain = "everyday"
+        for i in range(priming_turns):
+            text = everyday_loader.next()
             if text is None:
                 break
             result = await asyncio.to_thread(
@@ -161,7 +160,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             msg = _build_turn_msg(
                 ws, result.curiosity_state, threshold,
-                turn_idx, "priming", "music", text,
+                turn_idx, "priming", "everyday", text,
             )
             msg["data"]["total_turns"] = total_priming + autonomous_turns
             await websocket.send_json(msg)
@@ -177,33 +176,47 @@ async def websocket_endpoint(websocket: WebSocket):
             except asyncio.TimeoutError:
                 pass
 
-        # systems priming
-        integration._current_domain = "systems"
-        for i in range(min(priming_per_domain, systems_loader.total_turns)):
-            text = systems_loader.next()
-            if text is None:
-                break
-            result = await asyncio.to_thread(
-                integration.turn, user_input=text, process_only=True,
-            )
-            turn_idx += 1
+            # gate check: did this priming turn make the agent curious enough
+            # to interrupt? skip first 15 turns so threshold can calibrate.
+            interject = await asyncio.to_thread(integration.maybe_interject, 15)
+            if interject is not None:
+                question, has_questions, epistemic = interject
+                await websocket.send_json({
+                    "type": "gate_fired",
+                    "data": {
+                        "turn": turn_idx,
+                        "exploration_text": question,
+                        "has_questions": has_questions,
+                        "epistemic": round(float(epistemic), 6),
+                        "response": "",
+                        "concepts": [n["id"] for n in _serialize_graph(ws.graph)[0][:10]],
+                        "arousal": round(ws.affect.arousal(), 4),
+                        "valence": round(ws.affect.valence(), 4),
+                    },
+                })
 
-            msg = _build_turn_msg(
-                ws, result.curiosity_state, threshold,
-                turn_idx, "priming", "systems", text,
-            )
-            msg["data"]["total_turns"] = total_priming + autonomous_turns
-            await websocket.send_json(msg)
+                # pause priming, wait for the user's answer
+                raw = await websocket.receive_text()
+                answer_msg = json.loads(raw)
+                if answer_msg.get("type") == "answer" and answer_msg.get("text"):
+                    answer_text = answer_msg["text"]
+                    pre_concepts = set(ws.graph.top_concepts(10))
+                    await asyncio.to_thread(ws.process, answer_text)
+                    post_concepts = set(ws.graph.top_concepts(10))
+                    new_concepts = list(post_concepts - pre_concepts)
 
-            try:
-                raw = await asyncio.wait_for(
-                    websocket.receive_text(), timeout=delay_ms / 1000.0,
-                )
-                client_msg = json.loads(raw)
-                if client_msg.get("type") == "set_speed":
-                    delay_ms = client_msg["delay_ms"]
-            except asyncio.TimeoutError:
-                pass
+                    nodes, edges = _serialize_graph(ws.graph)
+                    await websocket.send_json({
+                        "type": "answer_processed",
+                        "data": {
+                            "answer": answer_text[:200],
+                            "new_concepts": new_concepts,
+                            "concepts": nodes,
+                            "edges": edges,
+                            "arousal": round(ws.affect.arousal(), 4),
+                            "valence": round(ws.affect.valence(), 4),
+                        },
+                    })
 
         # ========== PHASE 2: AUTONOMOUS ==========
         await websocket.send_json({
@@ -211,7 +224,9 @@ async def websocket_endpoint(websocket: WebSocket):
             "text": f"Autonomous exploration: {autonomous_turns} turns. Gate active.",
         })
 
-        threshold.reset()
+        # NOTE: threshold is not reset — priming has already calibrated it
+        # against the everyday domain, and that calibration is what the
+        # gate should keep using during autonomous turns.
         integration._current_domain = "autonomous"
 
         for i in range(autonomous_turns):
