@@ -28,73 +28,85 @@
 {"turn_index": 28, "domain": "everyday", "text": "Honey never goes bad. They found edible honey in Egyptian tombs. Low water content stops bacteria growing.", "stage": 1}
 {"turn_index": 29, "domain": "everyday", "text": "Caramel is just sugar heated past its melting point. But the window between golden and burnt is about thirty seconds.", "stage": 1}
 {"turn_index": 30, "domain": "everyday", "text": "The first bite of something is always the most intense. Your brain adapts fast and the second bite is already less.", "stage": 1}
-{"turn_index": 31, "domain": "everyday", "text": "Spicy food doesn't actually burn you. Capsaicin tricks the same nerve receptors that respond to heat. Your body believes the lie.", "stage": 1}
-{"turn_index": 32, "domain": "everyday", "text": "I always make too much pasta. Measuring it dry is harder than it looks.", "stage": 1}
-{"turn_index": 33, "domain": "everyday", "text": "Fermentation is controlled rot. Cheese, yogurt, bread, beer, pickles \u2014 all of them involve letting the right bacteria win.", "stage": 1}
-{"turn_index": 34, "domain": "everyday", "text": "Cold butter makes flaky pastry. Warm butter makes it dense. Temperature is doing most of the work in baking.", "stage": 1}
-{"turn_index": 35, "domain": "everyday", "text": "Apples and avocados go brown when you cut them because oxygen reacts with the exposed flesh. Lemon juice slows it down.", "stage": 1}
-{"turn_index": 36, "domain": "everyday", "text": "I cook rice by absorption now. I measured it out for years before I trusted my eyes and ears to tell me when it was done.", "stage": 1}
-{"turn_index": 37, "domain": "everyday", "text": "The Maillard reaction is what makes browned food taste better than just cooked food. It's a chemical reaction between sugars and proteins.", "stage": 1}
-{"turn_index": 38, "domain": "everyday", "text": "Strawberries lose flavour quickly after picking. The ones at the market have usually been travelling for days.", "stage": 1}
-{"turn_index": 39, "domain": "everyday", "text": "A sharp knife is actually safer than a dull one. Dull knives slip. Sharp knives go where you aim them.", "stage": 1}
-{"turn_index": 40, "domain": "everyday", "text": "I keep forgetting to put things in the fridge. Not because I forget \u2014 I just don't want the cooking to be over.", "stage": 1}
-{"turn_index": 41, "domain": "everyday", "text": "Vinegar and baking soda fizz because one is an acid and one is a base. The bubbles are carbon dioxide.", "stage": 1}
-{"turn_index": 42, "domain": "everyday", "text": "Food cooked slowly at low heat tastes different from food cooked fast at high heat. Both are valid, they just produce different things.", "stage": 1}
-{"turn_index": 43, "domain": "everyday", "text": "I once made soup entirely from leftovers and it was better than most things I planned.", "stage": 1}
-{"turn_index": 44, "domain": "everyday", "text": "Salt in sweet things is not a mistake. A pinch of salt in chocolate or caramel makes the sweetness more noticeable.", "stage": 1}
-{"turn_index": 45, "domain": "everyday", "text": "Garlic burns in about forty-five seconds if the pan is too hot. After that the whole dish tastes bitter.", "stage": 1}
-{"turn_index": 46, "domain": "everyday", "text": "Resting dough relaxes the gluten. That's why bread dough is easier to shape after it sits for a while.", "stage": 1}
-{"turn_index": 47, "domain": "everyday", "text": "I like cooking alone. The kitchen is where I think most clearly.", "stage": 1}
-{"turn_index": 48, "domain": "everyday", "text": "Olive oil has a smoke point lower than most frying oils. It's better for finishing and dressing than for high heat.", "stage": 1}
-{"turn_index": 49, "domain": "everyday", "text": "Onions cooked slowly for forty minutes become something completely different. Caramelised onions barely resemble raw ones.", "stage": 1}
-{"turn_index": 50, "domain": "everyday", "text": "My grandmother never used recipes. She said the food tells you when it's ready. I thought she was being poetic. I think she was right.", "stage": 1}
-{"turn_index": 51, "domain": "everyday", "text": "Chilli tastes better the day after because the capsaicin compounds disperse more evenly through the liquid overnight.", "stage": 1}
-{"turn_index": 52, "domain": "everyday", "text": "A cast iron pan holds heat more evenly than thin stainless. That's why a steak in cast iron has a better crust.", "stage": 1}
-{"turn_index": 53, "domain": "everyday", "text": "I burned myself on steam more times than on the pan. Steam carries more heat than boiling water at the same temperature.", "stage": 1}
-{"turn_index": 54, "domain": "everyday", "text": "Bread goes stale faster in the fridge than on the counter. Cold air pulls moisture out of it faster.", "stage": 1}
-{"turn_index": 55, "domain": "everyday", "text": "Tomatoes lose flavour in the fridge. The cold stops the enzymes that produce the compounds we taste as ripe.", "stage": 1}
-{"turn_index": 56, "domain": "everyday", "text": "Searing meat doesn't seal in the juices. That's a myth. It does produce the Maillard reaction, which is why we do it anyway.", "stage": 1}
-{"turn_index": 57, "domain": "everyday", "text": "I've started tasting food more while I cook. I used to just follow the recipe and trust the end result.", "stage": 1}
-{"turn_index": 58, "domain": "everyday", "text": "Cream thickens when you whip it because you're adding air and the fat molecules form a network around the bubbles.", "stage": 1}
-{"turn_index": 59, "domain": "everyday", "text": "The kitchen smells like whatever you cooked for hours after you're done. I like that. It extends the experience.", "stage": 1}
-{"turn_index": 60, "domain": "everyday", "text": "Boiling destroys some vitamins. Steaming preserves more. Roasting concentrates flavour but loses some too. There's always a trade.", "stage": 1}
-{"turn_index": 61, "domain": "everyday", "text": "I always add pasta water to the sauce. The starch makes it cling better to the pasta.", "stage": 1}
-{"turn_index": 62, "domain": "everyday", "text": "Sourdough starter is alive. You feed it flour and water and it ferments. Neglect it for too long and it dies.", "stage": 1}
-{"turn_index": 63, "domain": "everyday", "text": "My coffee routine is the same every morning. I've stopped questioning it. Some habits are just structure, not ceremony.", "stage": 1}
-{"turn_index": 64, "domain": "everyday", "text": "Sugar browns at different temperatures depending on what type it is. Fructose browns faster than sucrose.", "stage": 1}
-{"turn_index": 65, "domain": "everyday", "text": "I made kimchi once. It tasted wrong for two weeks and then suddenly tasted right. Fermentation has its own schedule.", "stage": 1}
-{"turn_index": 66, "domain": "everyday", "text": "Cooking from memory is different from cooking from a recipe. One feels like recalling something, the other feels like following instructions.", "stage": 1}
-{"turn_index": 67, "domain": "everyday", "text": "Frozen vegetables are often more nutritious than fresh ones. They're frozen right after harvest. The fresh ones at the store have been sitting.", "stage": 1}
-{"turn_index": 68, "domain": "everyday", "text": "Butter and flour cooked together become a roux. It's the base for most creamy sauces. Equal parts, low heat, constant stirring.", "stage": 1}
-{"turn_index": 69, "domain": "everyday", "text": "I used to add garlic too early. It would burn and I'd wonder why the food tasted off. I add it later now.", "stage": 1}
-{"turn_index": 70, "domain": "everyday", "text": "Food memories are some of the strongest ones I have. The smell of my mum's curry still does something to me.", "stage": 1}
-{"turn_index": 71, "domain": "everyday", "text": "Pasta shapes exist for a reason. Ridged pasta holds chunky sauce. Thin pasta holds light sauce. The shape and the sauce are matched.", "stage": 1}
-{"turn_index": 72, "domain": "everyday", "text": "Overmixing cake batter develops gluten and makes the cake tough. Baking rewards restraint more than effort.", "stage": 1}
-{"turn_index": 73, "domain": "everyday", "text": "I find washing up meditative. The task is clear and finite. That's rare.", "stage": 1}
-{"turn_index": 74, "domain": "everyday", "text": "Acid brightens food. A squeeze of lemon at the end lifts almost any savoury dish. It changes the perception of all the other flavours.", "stage": 1}
-{"turn_index": 75, "domain": "everyday", "text": "Cheese is just concentrated milk with the water removed. A kilogram of cheese takes about ten litres of milk to make.", "stage": 1}
-{"turn_index": 76, "domain": "everyday", "text": "I made the same recipe three times in a week once and it tasted slightly different each time. Small changes add up.", "stage": 1}
-{"turn_index": 77, "domain": "everyday", "text": "Fat carries flavour. Low fat versions of things often taste flat because the fat was doing most of the flavour work.", "stage": 1}
-{"turn_index": 78, "domain": "everyday", "text": "Chefs season food at every stage, not just at the end. Seasoning later just puts salt on the surface.", "stage": 1}
-{"turn_index": 79, "domain": "everyday", "text": "I don't always know what I want to eat until I smell something. Hunger and craving are different things.", "stage": 1}
-{"turn_index": 80, "domain": "everyday", "text": "An emulsion is a mixture of two things that don't naturally combine, like oil and water, held together by a third thing. Mayonnaise is an emulsion.", "stage": 1}
-{"turn_index": 81, "domain": "everyday", "text": "Slow cooker food is convenient but the texture is always a bit too soft. Low heat for a long time breaks down fibres that high heat wouldn't.", "stage": 1}
-{"turn_index": 82, "domain": "everyday", "text": "Cooking for someone is a way of paying attention to them. You have to know what they like, what they can't eat, what feels right.", "stage": 1}
-{"turn_index": 83, "domain": "everyday", "text": "Dried herbs are more concentrated than fresh ones. A teaspoon of dried thyme is closer to a tablespoon of fresh.", "stage": 1}
-{"turn_index": 84, "domain": "everyday", "text": "I once followed a recipe exactly and it still came out wrong. Recipes assume your oven, your pan, your ingredients. None of those are the same.", "stage": 1}
-{"turn_index": 85, "domain": "everyday", "text": "Baking is chemistry. Cooking is improvisation. That's the real difference between them.", "stage": 1}
-{"turn_index": 86, "domain": "everyday", "text": "Salting vegetables draws out water through osmosis. That's how you get cucumbers to release liquid before pickling.", "stage": 1}
-{"turn_index": 87, "domain": "everyday", "text": "I started keeping a notebook of things that worked. Not recipes. Just notes. Too much vinegar. Needs more time. Try less next time.", "stage": 1}
-{"turn_index": 88, "domain": "everyday", "text": "Pineapple has an enzyme that breaks down proteins. That's why it tenderises meat and why it stops gelatin from setting.", "stage": 1}
-{"turn_index": 89, "domain": "everyday", "text": "Eating alone feels different from eating with others. The food is the same but the experience isn't. I don't know what that means.", "stage": 1}
-{"turn_index": 90, "domain": "everyday", "text": "Umami is the fifth taste. Savoury, satisfying, almost meaty. Found in tomatoes, aged cheese, mushrooms, and soy sauce.", "stage": 1}
-{"turn_index": 91, "domain": "everyday", "text": "I keep buying coriander and forgetting to use it before it wilts. I've started storing it like flowers, stems in water.", "stage": 1}
-{"turn_index": 92, "domain": "everyday", "text": "Soup made from scratch takes all day. Tinned soup takes three minutes. The distance between those two outcomes is enormous.", "stage": 1}
-{"turn_index": 93, "domain": "everyday", "text": "The texture of food matters as much as the taste. That's why people describe crunch and creaminess as part of what they enjoy.", "stage": 1}
-{"turn_index": 94, "domain": "everyday", "text": "Pressure cookers work by raising the boiling point of water. At higher pressure, water boils hotter and food cooks faster.", "stage": 1}
-{"turn_index": 95, "domain": "everyday", "text": "Some of the best things I've cooked happened by accident. Running out of something and substituting. It forces you to think.", "stage": 1}
-{"turn_index": 96, "domain": "everyday", "text": "I think cooking well requires caring about the person who will eat it. It's hard to do well when you're just going through the motions.", "stage": 1}
-{"turn_index": 97, "domain": "everyday", "text": "Chocolate and coffee both contain bitter compounds. Combined, each one makes the other more complex rather than more bitter.", "stage": 1}
-{"turn_index": 98, "domain": "everyday", "text": "I've eaten the same breakfast every day for three years. It's not interesting. But it starts the day the same way every time and that helps.", "stage": 1}
-{"turn_index": 99, "domain": "everyday", "text": "Cooking is a skill where repetition matters more than talent. You get better mainly by doing it more often.", "stage": 1}
-{"turn_index": 100, "domain": "everyday", "text": "There's something satisfying about a finished meal. It exists, was made, and then it's gone. That completeness is part of the point.", "stage": 1}
+{"turn_index": 31, "domain": "everyday", "stage": 1, "text": "The observable universe is about 93 billion light-years across, but it has only existed for 13.8 billion years. The difference comes from expansion \u2014 space itself stretched while light was travelling."}
+{"turn_index": 32, "domain": "everyday", "stage": 1, "text": "A neutron star packs more mass than the sun into a sphere the size of a city. A teaspoon of neutron star material would weigh about a billion tonnes on Earth."}
+{"turn_index": 33, "domain": "everyday", "stage": 1, "text": "Light from the sun takes eight minutes to reach us. When you look at the sun, you are seeing it as it was eight minutes ago. When you look at the Andromeda galaxy, you are seeing it two and a half million years in the past."}
+{"turn_index": 34, "domain": "everyday", "stage": 1, "text": "Stars do not twinkle. The twinkling is caused by turbulence in Earth's atmosphere bending the light. From space, stars are perfectly steady points."}
+{"turn_index": 35, "domain": "everyday", "stage": 1, "text": "Most of the universe is invisible. Dark matter and dark energy make up roughly 95 percent of everything, but we have never directly detected either. We only know they exist because of what they do to the things we can see."}
+{"turn_index": 36, "domain": "everyday", "stage": 1, "text": "The Voyager 1 probe was launched in 1977 and is now over 23 billion kilometres from Earth. It is still sending data. The signal takes about 22 hours to reach us at the speed of light."}
+{"turn_index": 37, "domain": "everyday", "stage": 1, "text": "Black holes do not suck things in. They have the same gravitational pull as any other object of the same mass. If the sun were replaced by a black hole of equal mass, Earth's orbit would not change."}
+{"turn_index": 38, "domain": "everyday", "stage": 1, "text": "The surface of the sun is about 5,500 degrees Celsius. The corona \u2014 the outer atmosphere \u2014 is over a million degrees. Why the corona is hotter than the surface below it is still not fully understood."}
+{"turn_index": 39, "domain": "everyday", "stage": 1, "text": "Every atom heavier than hydrogen and helium was forged inside a star. The carbon in your body, the iron in your blood, the calcium in your bones \u2014 all of it was cooked in stellar interiors and scattered by supernovae."}
+{"turn_index": 40, "domain": "everyday", "stage": 1, "text": "Mars has the largest volcano in the solar system. Olympus Mons is about three times the height of Everest and so wide that if you stood at its edge, the opposite rim would be below the horizon."}
+{"turn_index": 41, "domain": "everyday", "stage": 1, "text": "The Milky Way and Andromeda are on a collision course. In about four billion years they will begin to merge. Most stars will pass each other harmlessly \u2014 the distances between them are too vast for direct collision."}
+{"turn_index": 42, "domain": "everyday", "stage": 1, "text": "Silence in space is not metaphorical. Sound needs a medium to travel through. In the near-vacuum of space there is nothing to carry it. Explosions, collisions, supernovae \u2014 all completely silent from a distance."}
+{"turn_index": 43, "domain": "everyday", "text": "Spicy food doesn't actually burn you. Capsaicin tricks the same nerve receptors that respond to heat. Your body believes the lie.", "stage": 1}
+{"turn_index": 44, "domain": "everyday", "text": "I always make too much pasta. Measuring it dry is harder than it looks.", "stage": 1}
+{"turn_index": 45, "domain": "everyday", "text": "Fermentation is controlled rot. Cheese, yogurt, bread, beer, pickles \u2014 all of them involve letting the right bacteria win.", "stage": 1}
+{"turn_index": 46, "domain": "everyday", "text": "Cold butter makes flaky pastry. Warm butter makes it dense. Temperature is doing most of the work in baking.", "stage": 1}
+{"turn_index": 47, "domain": "everyday", "text": "Apples and avocados go brown when you cut them because oxygen reacts with the exposed flesh. Lemon juice slows it down.", "stage": 1}
+{"turn_index": 48, "domain": "everyday", "text": "I cook rice by absorption now. I measured it out for years before I trusted my eyes and ears to tell me when it was done.", "stage": 1}
+{"turn_index": 49, "domain": "everyday", "text": "The Maillard reaction is what makes browned food taste better than just cooked food. It's a chemical reaction between sugars and proteins.", "stage": 1}
+{"turn_index": 50, "domain": "everyday", "text": "Strawberries lose flavour quickly after picking. The ones at the market have usually been travelling for days.", "stage": 1}
+{"turn_index": 51, "domain": "everyday", "text": "A sharp knife is actually safer than a dull one. Dull knives slip. Sharp knives go where you aim them.", "stage": 1}
+{"turn_index": 52, "domain": "everyday", "text": "I keep forgetting to put things in the fridge. Not because I forget \u2014 I just don't want the cooking to be over.", "stage": 1}
+{"turn_index": 53, "domain": "everyday", "text": "Vinegar and baking soda fizz because one is an acid and one is a base. The bubbles are carbon dioxide.", "stage": 1}
+{"turn_index": 54, "domain": "everyday", "text": "Food cooked slowly at low heat tastes different from food cooked fast at high heat. Both are valid, they just produce different things.", "stage": 1}
+{"turn_index": 55, "domain": "everyday", "text": "I once made soup entirely from leftovers and it was better than most things I planned.", "stage": 1}
+{"turn_index": 56, "domain": "everyday", "text": "Salt in sweet things is not a mistake. A pinch of salt in chocolate or caramel makes the sweetness more noticeable.", "stage": 1}
+{"turn_index": 57, "domain": "everyday", "text": "Garlic burns in about forty-five seconds if the pan is too hot. After that the whole dish tastes bitter.", "stage": 1}
+{"turn_index": 58, "domain": "everyday", "text": "Resting dough relaxes the gluten. That's why bread dough is easier to shape after it sits for a while.", "stage": 1}
+{"turn_index": 59, "domain": "everyday", "text": "I like cooking alone. The kitchen is where I think most clearly.", "stage": 1}
+{"turn_index": 60, "domain": "everyday", "text": "Olive oil has a smoke point lower than most frying oils. It's better for finishing and dressing than for high heat.", "stage": 1}
+{"turn_index": 61, "domain": "everyday", "text": "Onions cooked slowly for forty minutes become something completely different. Caramelised onions barely resemble raw ones.", "stage": 1}
+{"turn_index": 62, "domain": "everyday", "text": "My grandmother never used recipes. She said the food tells you when it's ready. I thought she was being poetic. I think she was right.", "stage": 1}
+{"turn_index": 63, "domain": "everyday", "text": "Chilli tastes better the day after because the capsaicin compounds disperse more evenly through the liquid overnight.", "stage": 1}
+{"turn_index": 64, "domain": "everyday", "text": "A cast iron pan holds heat more evenly than thin stainless. That's why a steak in cast iron has a better crust.", "stage": 1}
+{"turn_index": 65, "domain": "everyday", "text": "I burned myself on steam more times than on the pan. Steam carries more heat than boiling water at the same temperature.", "stage": 1}
+{"turn_index": 66, "domain": "everyday", "text": "Bread goes stale faster in the fridge than on the counter. Cold air pulls moisture out of it faster.", "stage": 1}
+{"turn_index": 67, "domain": "everyday", "text": "Tomatoes lose flavour in the fridge. The cold stops the enzymes that produce the compounds we taste as ripe.", "stage": 1}
+{"turn_index": 68, "domain": "everyday", "text": "Searing meat doesn't seal in the juices. That's a myth. It does produce the Maillard reaction, which is why we do it anyway.", "stage": 1}
+{"turn_index": 69, "domain": "everyday", "text": "I've started tasting food more while I cook. I used to just follow the recipe and trust the end result.", "stage": 1}
+{"turn_index": 70, "domain": "everyday", "text": "Cream thickens when you whip it because you're adding air and the fat molecules form a network around the bubbles.", "stage": 1}
+{"turn_index": 71, "domain": "everyday", "text": "The kitchen smells like whatever you cooked for hours after you're done. I like that. It extends the experience.", "stage": 1}
+{"turn_index": 72, "domain": "everyday", "text": "Boiling destroys some vitamins. Steaming preserves more. Roasting concentrates flavour but loses some too. There's always a trade.", "stage": 1}
+{"turn_index": 73, "domain": "everyday", "text": "I always add pasta water to the sauce. The starch makes it cling better to the pasta.", "stage": 1}
+{"turn_index": 74, "domain": "everyday", "text": "Sourdough starter is alive. You feed it flour and water and it ferments. Neglect it for too long and it dies.", "stage": 1}
+{"turn_index": 75, "domain": "everyday", "text": "My coffee routine is the same every morning. I've stopped questioning it. Some habits are just structure, not ceremony.", "stage": 1}
+{"turn_index": 76, "domain": "everyday", "text": "Sugar browns at different temperatures depending on what type it is. Fructose browns faster than sucrose.", "stage": 1}
+{"turn_index": 77, "domain": "everyday", "text": "I made kimchi once. It tasted wrong for two weeks and then suddenly tasted right. Fermentation has its own schedule.", "stage": 1}
+{"turn_index": 78, "domain": "everyday", "text": "Cooking from memory is different from cooking from a recipe. One feels like recalling something, the other feels like following instructions.", "stage": 1}
+{"turn_index": 79, "domain": "everyday", "text": "Frozen vegetables are often more nutritious than fresh ones. They're frozen right after harvest. The fresh ones at the store have been sitting.", "stage": 1}
+{"turn_index": 80, "domain": "everyday", "text": "Butter and flour cooked together become a roux. It's the base for most creamy sauces. Equal parts, low heat, constant stirring.", "stage": 1}
+{"turn_index": 81, "domain": "everyday", "text": "I used to add garlic too early. It would burn and I'd wonder why the food tasted off. I add it later now.", "stage": 1}
+{"turn_index": 82, "domain": "everyday", "text": "Food memories are some of the strongest ones I have. The smell of my mum's curry still does something to me.", "stage": 1}
+{"turn_index": 83, "domain": "everyday", "text": "Pasta shapes exist for a reason. Ridged pasta holds chunky sauce. Thin pasta holds light sauce. The shape and the sauce are matched.", "stage": 1}
+{"turn_index": 84, "domain": "everyday", "text": "Overmixing cake batter develops gluten and makes the cake tough. Baking rewards restraint more than effort.", "stage": 1}
+{"turn_index": 85, "domain": "everyday", "text": "I find washing up meditative. The task is clear and finite. That's rare.", "stage": 1}
+{"turn_index": 86, "domain": "everyday", "text": "Acid brightens food. A squeeze of lemon at the end lifts almost any savoury dish. It changes the perception of all the other flavours.", "stage": 1}
+{"turn_index": 87, "domain": "everyday", "text": "Cheese is just concentrated milk with the water removed. A kilogram of cheese takes about ten litres of milk to make.", "stage": 1}
+{"turn_index": 88, "domain": "everyday", "text": "I made the same recipe three times in a week once and it tasted slightly different each time. Small changes add up.", "stage": 1}
+{"turn_index": 89, "domain": "everyday", "text": "Fat carries flavour. Low fat versions of things often taste flat because the fat was doing most of the flavour work.", "stage": 1}
+{"turn_index": 90, "domain": "everyday", "text": "Chefs season food at every stage, not just at the end. Seasoning later just puts salt on the surface.", "stage": 1}
+{"turn_index": 91, "domain": "everyday", "text": "I don't always know what I want to eat until I smell something. Hunger and craving are different things.", "stage": 1}
+{"turn_index": 92, "domain": "everyday", "text": "An emulsion is a mixture of two things that don't naturally combine, like oil and water, held together by a third thing. Mayonnaise is an emulsion.", "stage": 1}
+{"turn_index": 93, "domain": "everyday", "text": "Slow cooker food is convenient but the texture is always a bit too soft. Low heat for a long time breaks down fibres that high heat wouldn't.", "stage": 1}
+{"turn_index": 94, "domain": "everyday", "text": "Cooking for someone is a way of paying attention to them. You have to know what they like, what they can't eat, what feels right.", "stage": 1}
+{"turn_index": 95, "domain": "everyday", "text": "Dried herbs are more concentrated than fresh ones. A teaspoon of dried thyme is closer to a tablespoon of fresh.", "stage": 1}
+{"turn_index": 96, "domain": "everyday", "text": "I once followed a recipe exactly and it still came out wrong. Recipes assume your oven, your pan, your ingredients. None of those are the same.", "stage": 1}
+{"turn_index": 97, "domain": "everyday", "text": "Baking is chemistry. Cooking is improvisation. That's the real difference between them.", "stage": 1}
+{"turn_index": 98, "domain": "everyday", "text": "Salting vegetables draws out water through osmosis. That's how you get cucumbers to release liquid before pickling.", "stage": 1}
+{"turn_index": 99, "domain": "everyday", "text": "I started keeping a notebook of things that worked. Not recipes. Just notes. Too much vinegar. Needs more time. Try less next time.", "stage": 1}
+{"turn_index": 100, "domain": "everyday", "text": "Pineapple has an enzyme that breaks down proteins. That's why it tenderises meat and why it stops gelatin from setting.", "stage": 1}
+{"turn_index": 101, "domain": "everyday", "text": "Eating alone feels different from eating with others. The food is the same but the experience isn't. I don't know what that means.", "stage": 1}
+{"turn_index": 102, "domain": "everyday", "text": "Umami is the fifth taste. Savoury, satisfying, almost meaty. Found in tomatoes, aged cheese, mushrooms, and soy sauce.", "stage": 1}
+{"turn_index": 103, "domain": "everyday", "text": "I keep buying coriander and forgetting to use it before it wilts. I've started storing it like flowers, stems in water.", "stage": 1}
+{"turn_index": 104, "domain": "everyday", "text": "Soup made from scratch takes all day. Tinned soup takes three minutes. The distance between those two outcomes is enormous.", "stage": 1}
+{"turn_index": 105, "domain": "everyday", "text": "The texture of food matters as much as the taste. That's why people describe crunch and creaminess as part of what they enjoy.", "stage": 1}
+{"turn_index": 106, "domain": "everyday", "text": "Pressure cookers work by raising the boiling point of water. At higher pressure, water boils hotter and food cooks faster.", "stage": 1}
+{"turn_index": 107, "domain": "everyday", "text": "Some of the best things I've cooked happened by accident. Running out of something and substituting. It forces you to think.", "stage": 1}
+{"turn_index": 108, "domain": "everyday", "text": "I think cooking well requires caring about the person who will eat it. It's hard to do well when you're just going through the motions.", "stage": 1}
+{"turn_index": 109, "domain": "everyday", "text": "Chocolate and coffee both contain bitter compounds. Combined, each one makes the other more complex rather than more bitter.", "stage": 1}
+{"turn_index": 110, "domain": "everyday", "text": "I've eaten the same breakfast every day for three years. It's not interesting. But it starts the day the same way every time and that helps.", "stage": 1}
+{"turn_index": 111, "domain": "everyday", "text": "Cooking is a skill where repetition matters more than talent. You get better mainly by doing it more often.", "stage": 1}
+{"turn_index": 112, "domain": "everyday", "text": "There's something satisfying about a finished meal. It exists, was made, and then it's gone. That completeness is part of the point.", "stage": 1}
