@@ -147,6 +147,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
         total_priming = priming_turns
         turn_idx = 0
+        priming_epistemics = []  # track for threshold seeding
 
         integration._current_domain = "everyday"
         for i in range(priming_turns):
@@ -157,6 +158,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 integration.turn, user_input=text, process_only=True,
             )
             turn_idx += 1
+            priming_epistemics.append(result.curiosity_state.epistemic)
 
             msg = _build_turn_msg(
                 ws, result.curiosity_state, threshold,
@@ -195,8 +197,11 @@ async def websocket_endpoint(websocket: WebSocket):
                     },
                 })
 
-                # pause priming, wait for the user's answer
-                raw = await websocket.receive_text()
+                # pause priming, wait for the user's answer (90s timeout)
+                try:
+                    raw = await asyncio.wait_for(websocket.receive_text(), timeout=90.0)
+                except asyncio.TimeoutError:
+                    raw = '{"type":"answer","text":""}'
                 answer_msg = json.loads(raw)
                 if answer_msg.get("type") == "answer" and answer_msg.get("text"):
                     answer_text = answer_msg["text"]
@@ -224,9 +229,13 @@ async def websocket_endpoint(websocket: WebSocket):
             "text": f"Autonomous exploration: {autonomous_turns} turns. Gate active.",
         })
 
-        # NOTE: threshold is not reset — priming has already calibrated it
-        # against the everyday domain, and that calibration is what the
-        # gate should keep using during autonomous turns.
+        # Reset threshold seeded with the top half of priming epistemics.
+        # This anchors the 85th-percentile gate to the actual range seen
+        # during priming — not the collapsed end-of-priming values — so
+        # the gate has a realistic chance of firing during autonomous turns.
+        priming_epistemics.sort(reverse=True)
+        seed = priming_epistemics[:max(10, len(priming_epistemics) // 2)]
+        threshold.reset(seed_values=seed)
         integration._current_domain = "autonomous"
 
         for i in range(autonomous_turns):
@@ -251,8 +260,11 @@ async def websocket_endpoint(websocket: WebSocket):
                     },
                 })
 
-                # wait for user answer (no timeout — the demo pauses)
-                raw = await websocket.receive_text()
+                # wait for user answer (90s timeout so done always sends)
+                try:
+                    raw = await asyncio.wait_for(websocket.receive_text(), timeout=90.0)
+                except asyncio.TimeoutError:
+                    raw = '{"type":"answer","text":""}'
                 answer_msg = json.loads(raw)
 
                 if answer_msg.get("type") == "answer" and answer_msg.get("text"):
@@ -301,6 +313,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
         # ========== DONE ==========
         nodes, edges = _serialize_graph(ws.graph)
+        await websocket.send_json({"type": "status", "text": "Reflecting on what it became..."})
+        summary = await asyncio.to_thread(
+            _generate_personality_summary, ws
+        )
         await websocket.send_json({
             "type": "done",
             "data": {
@@ -310,6 +326,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "final_valence": round(ws.affect.valence(), 4),
                 "concepts": nodes,
                 "edges": edges,
+                "personality_summary": summary,
             },
         })
 
@@ -320,6 +337,30 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_json({"type": "error", "text": str(e)})
         except Exception:
             pass
+
+
+def _generate_personality_summary(ws):
+    """Ask the SLM to describe the personality that formed, in 2-3 sentences."""
+    top = ws.graph.top_concepts(10)
+    context = ws.context_string()
+
+    prompt = (
+        f"{context}\n\n"
+        f"You have just finished forming. Your dominant concepts are: {', '.join(top)}.\n\n"
+        "In two or three plain sentences, describe the personality that emerged — "
+        "what you seem to care about, what kind of thinker you became. "
+        "Speak in first person. No hedging. No technical language. "
+        "Write as if telling someone who just met you who you are."
+    )
+    try:
+        import ollama as _ollama
+        response = _ollama.chat(
+            model=config.OLLAMA_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response["message"]["content"].strip()
+    except Exception:
+        return f"I kept returning to {', '.join(top[:3])}. Something settled, though I can't fully name it yet."
 
 
 def _init_topos():
@@ -338,7 +379,7 @@ def _init_topos():
                     param.mul_(scale)
 
     curiosity = CuriositySignal(forward_model, window_k=config.PROGRESS_WINDOW_LIVE)
-    threshold = AdaptiveThreshold(window_size=50, percentile=85.0)
+    threshold = AdaptiveThreshold(window_size=50, percentile=75.0)
     action_proj = ActionProjection()
     exploration_gen = ExplorationGenerator(model_name=config.OLLAMA_MODEL)
 

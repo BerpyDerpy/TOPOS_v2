@@ -38,6 +38,12 @@
     const startOverlay = $("#start-overlay");
     const startBtn = $("#start-btn");
     const graphPanel = $("#graph-panel");
+    const endOverlay = $("#end-overlay");
+    const endSummary = $("#end-summary");
+    const endConcepts = $("#end-concepts");
+    const endAffect = $("#end-affect");
+    const endTurns = $("#end-turns");
+    const endClose = $("#end-close");
 
     // ========== D3 GRAPH SETUP ==========
     const svg = d3.select("#graph-svg");
@@ -97,9 +103,9 @@
     }
 
     function nodeColor(d) {
-        // color based on weight — low weight = dim, high weight = bright
+        // warm cinnamon → saffron → honey scale by weight
         const t = Math.min(1, d.weight / 10);
-        return d3.interpolateViridis(0.2 + t * 0.6);
+        return d3.interpolateRgb("#8b4513", "#e8b85e")(t);
     }
 
     function updateGraph(concepts, edges) {
@@ -298,10 +304,10 @@
         const xScale = (i) => pad.left + (i / (MAX_HISTORY - 1)) * plotW;
         const yScale = (v) => pad.top + plotH - (v / maxVal) * plotH;
 
-        // threshold line
+        // threshold line — saffron dashed
         ctx.beginPath();
         ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
+        ctx.strokeStyle = "rgba(217, 154, 58, 0.5)";
         ctx.lineWidth = 1;
         for (let i = 0; i < thresholdHistory.length; i++) {
             const x = xScale(i + MAX_HISTORY - thresholdHistory.length);
@@ -311,9 +317,9 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // epistemic line
+        // epistemic line — ember
         ctx.beginPath();
-        ctx.strokeStyle = "#638cff";
+        ctx.strokeStyle = "#c25a1f";
         ctx.lineWidth = 2;
         for (let i = 0; i < epistemicHistory.length; i++) {
             const x = xScale(i + MAX_HISTORY - epistemicHistory.length);
@@ -329,8 +335,8 @@
         ctx.lineTo(xScale(MAX_HISTORY - epistemicHistory.length), yScale(0));
         ctx.closePath();
         const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
-        grad.addColorStop(0, "rgba(99, 140, 255, 0.15)");
-        grad.addColorStop(1, "rgba(99, 140, 255, 0.0)");
+        grad.addColorStop(0, "rgba(194, 90, 31, 0.18)");
+        grad.addColorStop(1, "rgba(194, 90, 31, 0.0)");
         ctx.fillStyle = grad;
         ctx.fill();
 
@@ -340,9 +346,9 @@
             const cy = yScale(epistemicHistory[epistemicHistory.length - 1]);
             ctx.beginPath();
             ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-            ctx.fillStyle = "#638cff";
+            ctx.fillStyle = "#c25a1f";
             ctx.fill();
-            ctx.strokeStyle = "#fff";
+            ctx.strokeStyle = "#f5ecde";
             ctx.lineWidth = 1.5;
             ctx.stroke();
         }
@@ -362,6 +368,34 @@
             feedScroll.removeChild(feedScroll.firstChild);
         }
     }
+
+    // ========== END MODAL ==========
+    function showEndModal(data) {
+        // summary text
+        endSummary.textContent = data.personality_summary || "";
+
+        // concept tags — top 5 bold, rest lighter
+        endConcepts.innerHTML = "";
+        (data.final_concepts || []).slice(0, 12).forEach((c, i) => {
+            const tag = document.createElement("span");
+            tag.className = "end-concept-tag" + (i < 5 ? " strong" : "");
+            tag.textContent = c;
+            endConcepts.appendChild(tag);
+        });
+
+        // affect line
+        const valSign = data.final_valence >= 0 ? "+" : "";
+        endAffect.textContent =
+            `arousal ${data.final_arousal.toFixed(2)}  ·  valence ${valSign}${data.final_valence.toFixed(2)}`;
+
+        endTurns.textContent = `${data.total_turns} turns`;
+
+        endOverlay.classList.add("active");
+    }
+
+    endClose.addEventListener("click", () => {
+        endOverlay.classList.remove("active");
+    });
 
     // ========== PROGRESS ==========
     function updateProgress(turn, total, phase) {
@@ -445,6 +479,7 @@
                 setStatus("Complete", "connected");
                 updateGraph(msg.data.concepts, msg.data.edges);
                 addFeedItem("★", "", `Done. ${msg.data.total_turns} turns. Top: ${msg.data.final_concepts.slice(0, 5).join(", ")}`, false);
+                showEndModal(msg.data);
                 break;
 
             case "error":

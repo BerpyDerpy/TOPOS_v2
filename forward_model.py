@@ -310,12 +310,16 @@ class AdaptiveThreshold:
         # record a new epistemic value
         self._values.append(epistemic)
 
-    def reset(self):
-        # clear the window. next should_explore() calls will return True
-        # until at least 2 new values are recorded (cold-start behavior).
-        # use at phase boundaries where the epistemic distribution changes
-        # (e.g. priming -> autonomous).
+    def reset(self, seed_values=None):
+        # clear the window and optionally pre-populate with seed values.
+        # seed_values: iterable of floats (e.g. peak epistemics from priming)
+        #   — lets the threshold start calibrated to a known distribution
+        #   rather than cold (which would fire on the first turn).
+        # without seeds: first two turns always explore (cold-start).
         self._values.clear()
+        if seed_values is not None:
+            for v in seed_values:
+                self._values.append(v)
 
     def should_explore(self, epistemic):
         # returns true if the epistemic value is above the threshold

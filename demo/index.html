@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOPOS — Live Mind Visualization</title>
+    <title>TOPOS — a mind forming</title>
     <meta name="description" content="Real-time visualization of TOPOS workspace state: concept graph, affect, epistemic uncertainty, and curiosity-driven exploration.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body>
     <!-- Header -->
@@ -45,7 +45,7 @@
         <aside class="metrics-column">
             <!-- Affect -->
             <section class="panel affect-panel">
-                <div class="panel-header"><h2>Affect State</h2></div>
+                <div class="panel-header"><h2>Affect</h2></div>
                 <div class="gauge-row">
                     <div class="gauge-label">Arousal</div>
                     <div class="gauge-track">
@@ -73,7 +73,7 @@
             <!-- Epistemic -->
             <section class="panel epistemic-panel">
                 <div class="panel-header">
-                    <h2>Epistemic Uncertainty</h2>
+                    <h2>Uncertainty</h2>
                     <span class="panel-badge" id="epistemic-badge">0.000000</span>
                 </div>
                 <canvas id="epistemic-canvas" width="400" height="120"></canvas>
@@ -82,7 +82,7 @@
             <!-- Turn Feed -->
             <section class="panel feed-panel">
                 <div class="panel-header">
-                    <h2>Turn Feed</h2>
+                    <h2>What it's reading</h2>
                     <span class="panel-badge" id="turn-badge">Turn 0</span>
                 </div>
                 <div class="feed-scroll" id="feed-scroll"></div>
@@ -109,28 +109,26 @@
     <div class="gate-overlay" id="gate-overlay">
         <div class="gate-modal">
             <div class="gate-header">
-                <div class="gate-icon">⚡</div>
-                <h2>The System is Uncertain</h2>
+                <div class="gate-icon">🕯</div>
+                <h2>It's wondering something</h2>
                 <div class="gate-epistemic">
-                    Epistemic: <span id="gate-epistemic-val">0.0000</span>
+                    uncertainty: <span id="gate-epistemic-val">0.0000</span>
                 </div>
             </div>
             <div class="gate-body">
                 <div class="gate-section">
-                    <h3>Exploration</h3>
                     <p id="gate-exploration-text"></p>
                 </div>
                 <div class="gate-section">
-                    <h3>System's Interpretation</h3>
                     <p id="gate-response-text" class="gate-response"></p>
                 </div>
             </div>
             <div class="gate-input-section">
-                <label for="gate-answer">Your Answer Shapes Its Mind</label>
+                <label for="gate-answer">Your answer becomes part of it</label>
                 <div class="gate-input-row">
-                    <input type="text" id="gate-answer" placeholder="Type your answer..."
+                    <input type="text" id="gate-answer" placeholder="say something..."
                            autocomplete="off" spellcheck="false">
-                    <button id="gate-submit">Send</button>
+                    <button id="gate-submit">Share</button>
                 </div>
             </div>
         </div>
@@ -142,19 +140,20 @@
             <h1>TOPOS</h1>
             <p class="start-subtitle">Topology Oriented Persistent Observer System</p>
             <p class="start-desc">
-                The system will be fed data about
-                <strong>cooking</strong>.
-                Its concept graph, affect, and epistemic state will evolve.
-                When it's uncertain, it will ask, and your answer shapes its understanding.
+                Watch a personality form in real time. It begins with no opinions,
+                no memories, no sense of what matters. Feed it <strong>experiences</strong>
+                and something accumulates — concepts it keeps returning to, feelings
+                it hasn't named yet. When it's uncertain, it will ask.
+                What you say next becomes part of who it is.
             </p>
             <div class="start-config">
                 <div class="config-row">
-                    <label>Priming turns per domain</label>
+                    <label>Priming turns</label>
                     <input type="number" id="cfg-priming" value="50" min="5" max="100">
                 </div>
                 <div class="config-row">
                     <label>Autonomous turns</label>
-                    <input type="number" id="cfg-autonomous" value="2" min="5" max="100">
+                    <input type="number" id="cfg-autonomous" value="20" min="5" max="100">
                 </div>
                 <div class="config-row">
                     <label>Speed (ms/turn)</label>
@@ -165,7 +164,26 @@
         </div>
     </div>
 
+    <!-- End-of-run Modal -->
+    <div class="end-overlay" id="end-overlay">
+        <div class="end-modal">
+            <div class="end-header">
+                <div class="end-icon">✦</div>
+                <h2>Something formed</h2>
+            </div>
+            <div class="end-body">
+                <p class="end-summary" id="end-summary"></p>
+                <div class="end-concepts" id="end-concepts"></div>
+                <div class="end-affect" id="end-affect"></div>
+            </div>
+            <div class="end-footer">
+                <span class="end-turns" id="end-turns"></span>
+                <button class="end-close" id="end-close">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=2"></script>
 </body>
 </html>
