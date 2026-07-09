@@ -1,5 +1,8 @@
 # TOPOS
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21273134.svg)](https://doi.org/10.5281/zenodo.21273134)
+
+
 TOPOS is a Global Workspace Theory inspired cognitive architecture for conversational agents. Instead of relying on reinforcement learning or a prompted persona, it separates cognition from language generation: a small set of workspace modules (a concept graph, an affective state vector, episodic memory, and a surprise signal) hold and update the agent's state, and a frozen small language model reads from that workspace purely to produce text. The model doesn't think here. It speaks what the workspace already holds.
 
 Development started April 18, 2026, and the bulk of the architecture and experiments described in RESEARCH.md were done through early May.
@@ -13,4 +16,4 @@ Development started April 18, 2026, and the bulk of the architecture and experim
 
 Full experimental writeup, including the failure modes and what didn't work, is in RESEARCH.md.
 
-This is ongoing, imperfect work with plenty of open questions (identity persistence under contradiction, affect saturation over long runs, no real introspection). Feedback and issues welcome.
+This is ongoing, imperfect work with plenty of open questions (identity persistence under contradiction, affect saturation over long runs, no real introspection, and the broadcast mechanism above). Feedback and issues welcome.
