@@ -30,6 +30,10 @@ Applied to TOPOS:
 
 GWT provides a formal connection to curiosity: inputs that do not fit the current workspace state produce a surprise signal, which triggers deeper processing. This is equivalent to information gain without a reward signal.
 
+## A note on the GWT framing
+
+This is GWT-inspired rather than a strict implementation. Proper Global Workspace Theory, in the computational sense (Dehaene, Naccache, and others), calls for competition among modules for access to the workspace, and a broadcast step where the winning content is sent back out to all modules, creating a feedback loop that updates them in turn. What's implemented here is closer to a blackboard architecture: modules write to a shared workspace state, and that state is read out by the output layer, but there isn't yet explicit competition for access or a broadcast-and-update loop back to the concept graph, affect state, and memory modules. Closing that loop is one of the more interesting open directions for this work, not something already solved here.
+
 ### Alternatives Considered
 
 **Standard RL:** Rejected. See above.
